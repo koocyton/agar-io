@@ -47,8 +47,8 @@ public class KTApplication {
                 .addResource("/", "/public/")
                 .addFilter("/", AppFilter.class)
                 .createInjectorAfter(injector->{
-                    ScheduledExecutorService newScheduledThreadPool = Executors.newScheduledThreadPool(4);
-                    newScheduledThreadPool.scheduleWithFixedDelay(injector.getInstance(AgarTask.class), 5, 5, TimeUnit.SECONDS);
+                    ScheduledExecutorService newScheduledThreadPool = Executors.newScheduledThreadPool(8);
+                    newScheduledThreadPool.scheduleWithFixedDelay(injector.getInstance(AgarTask.class), 1000, 10, TimeUnit.MILLISECONDS);
                 })
                 .printError(true)
                 .launch();
