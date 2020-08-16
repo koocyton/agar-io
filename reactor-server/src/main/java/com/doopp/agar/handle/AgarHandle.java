@@ -46,7 +46,7 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
         User user = requestAttribute.getAttribute("SessionUser", User.class);
         user.setAction("move");
         addPlayer(channel, user);
-        return null;
+        return Mono.empty();
     }
 
     @Override
@@ -54,10 +54,11 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
         User user = getChannelUser(channel);
         if (user!=null && !Strings.isNullOrEmpty(frame.text()) && frame.text().contains(" ")) {
             String[] xy = frame.text().split(" ");
-            user.setX(Integer.parseInt(xy[0]));
-            user.setY(Integer.parseInt(xy[1]));
+            user.setX(Float.parseFloat(xy[0]));
+            user.setY(Float.parseFloat(xy[1]));
+            players.put(user.getId(), user);
         }
-        return null;
+        return Mono.empty();
     }
 
     @Override
@@ -67,13 +68,10 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     }
 
     public void pushPlayers() {
-        String playersJson = playersToString();
+        String playersString = playersToString();
         channels.forEach((userId, channel)->{
             if (channel.isOpen()) {
-                this.sendTextMessage(playersJson, channel);
-            }
-            else {
-                channel.close();
+                this.sendTextMessage(playersString, channel);
             }
         });
     }
@@ -81,7 +79,7 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     private String playersToString() {
         AtomicReference<String> s = new AtomicReference<>("");
         players.forEach((userId, user)->{
-            s.set("\n"+user.toString());
+            s.set(s.get()+"\n"+user.toString());
         });
         return s.get();
     }

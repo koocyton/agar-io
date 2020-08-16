@@ -151,92 +151,47 @@
         }
     });
 
-    let Map = function() {
-        this.map = agar.context;
-        this.interval = 50;
-        this.x = 0;
-        this.y = 0;
-        this.targetX = 0;
-        this.targetY = 0;
-        this.renderMap(this.x, this.y);
-    };
-
-    Map.prototype.recordMove = function(x, y) {
-        this.targetX = x;
-        this.targetY = y;
-    };
-
-    Map.prototype.renderMap = function(x, y) {
-        // 画竖线
-        let mapWidth = Math.floor(agar.canvasWidth/this.interval) * this.interval;
-        for (let ii=0; ii<mapWidth/this.interval; ii++) {
-            let startX = ii * this.interval * agar.devicePixelRatio - x;
-            this.map.moveTo(startX, 0);
-            this.map.lineTo(startX, agar.canvasHeight);
-        }
-        // 画横线
-        let mapHeight = Math.floor(agar.canvasHeight/this.interval) * this.interval;
-        for (let ii=0; ii<mapHeight/this.interval; ii++) {
-            let startY = ii * this.interval * agar.devicePixelRatio - y;
-            this.map.moveTo (0, startY);
-            this.map.lineTo(agar.canvasWidth, startY);
-        }
-        this.map.lineWidth = 1;
-        this.map.strokeStyle = "#aaa" ;
-        this.map.stroke();
-    };
-
-    Map.prototype.move = function() {
-        this.x = this.x - (agar.width/2 - this.targetX)/100;
-        this.y = this.y - (agar.height/2 - this.targetY)/100;
-        this.renderMap(this.x , this.y);
-    };
-
     let Player = function(x, y, user) {
         this.user = (typeof user === "object") ? user : {};
         this.radio = 30;
-        this.fillStyle = '#'+Math.floor(Math.random()*16777215).toString(16);
+        this.fillStyle = '#'+ user.color;
         this.textStyle = "#FFFFFF";
         this.strokeStyle = "#444444";
-        this.x = x * agar.devicePixelRatio;
-        this.y = y * agar.devicePixelRatio;
+        this.targetX = x * agar.devicePixelRatio;
+        this.targetY = y * agar.devicePixelRatio;
         this.cell = agar.context;
-        this.renderCell();
-        this.renderName();
     };
 
-    Player.prototype.recordMove = function(x, y) {
-        this.x = x * agar.devicePixelRatio;
-        this.y = y * agar.devicePixelRatio;
+    Player.prototype.moveTarget = function(x, y) {
+        this.targetX = x * agar.devicePixelRatio;
+        this.targetY = y * agar.devicePixelRatio;
     };
 
     Player.prototype.renderCell = function() {
+        this.user.x = this.targetX;
+        this.user.y = this.targetY;
         this.cell.beginPath();
         this.cell.fillStyle = this.fillStyle;
-        this.cell.moveTo(this.x, this.y);
-        this.cell.arc(this.x, this.y, this.radio,0,Math.PI*2,20);//x,y坐标,半径,圆周率
+        this.cell.moveTo(this.targetX, this.targetY);
+        this.cell.arc(this.targetX, this.targetY, this.radio,0,Math.PI*2,20);//x,y坐标,半径,圆周率
         this.cell.closePath();
         this.cell.fill();
-    };
 
-    Player.prototype.renderName = function() {
         if (this.user.name!=null) {
-            this.cell.font = "18px bold 黑体";
+            this.cell.font = "21px bold 黑体";
             this.cell.fillStyle = this.textStyle;
             this.cell.textAlign = "center";
             this.cell.textBaseline = "middle";
-            // this.cell.fillText(this.name, this.x, this.y);
             this.cell.strokeStyle = this.strokeStyle;
-            this.cell.strokeText(this.user.name,this.x, this.y);
+            this.cell.strokeText(this.user.name,this.user.x, this.user.y);
             this.cell.fillStyle = this.textStyle;
-            this.cell.fillText(this.user.name,this.x, this.y);
+            this.cell.fillText(this.user.name,this.user.x, this.user.y);
         }
     };
 
     Player.prototype.move = function() {
         // this.cell.clearRect(0,0, agar.canvasWidth, agar.canvasHeight);
         this.renderCell();
-        this.renderName();
     };
 
     let Agar = function() {
@@ -270,18 +225,40 @@
             that.me = user;
             that.initCanvas();
             that.initMap();
-            that.createMe();
+            that.createMe(user.x, user.y, user);
             that.listenMouse();
             that.runTimer()
         });
     };
 
     Agar.prototype.connect = function(token, user, onSuccess) {
+        let that = this;
         this.socket = $.WS("/ws/agar-io", ["User-Token", token]);
         this.socket.onConnected(function () {
             onSuccess();
         });
         this.socket.onMessage(function (msg) {
+            let receiveUsers = msg.data.split(/\n/);
+            receiveUsers.forEach(function(receiveUser){
+                receiveUser = receiveUser.split(" ");
+                if (receiveUser.length>=6) {
+                    let user = {
+                        id: receiveUser[0],
+                        name: receiveUser[1],
+                        color: receiveUser[2],
+                        action: receiveUser[3],
+                        gradle: receiveUser[4],
+                        x: receiveUser[5],
+                        y: receiveUser[6],
+                    };
+                    if (user.id!==that.me.user.id) {
+                        that.players[receiveUser[0]] = new Player(user.x, user.y, user);
+                    }
+                    else {
+                        that.me = new Player(user.x, user.y, user);
+                    }
+                }
+            });
         });
     }
 
@@ -291,20 +268,24 @@
     };
 
     Agar.prototype.initMap = function() {
-        this.map = new Map(this.me);
+        // this.map = new Map(this.me);
         // this.allCell.push(this.map);
     };
 
-    Agar.prototype.createMe = function() {
-        this.me = new Player(agar.width/2, agar.height/2, this.me);
+    Agar.prototype.createMe = function(x, y, user) {
+        this.me = new Player(x, y, user);
     };
 
     Agar.prototype.listenMouse = function() {
         let that = this;
         this.canvas.on("mousemove", function(ev){
-            let x = that.me.x + (ev.clientX - that.width/2) / 100;
-            let y = that.me.y + (ev.clientY - that.height/2) / 100;
-            that.me.recordMove(x, y);
+            let targetX = that.me.user.x + (ev.clientX - that.width/2) / 1000;
+            let targetY = that.me.user.y + (ev.clientY - that.height/2) / 1000;
+            targetX = (targetX>500) ? 500 : targetX;
+            targetX = (targetX<0) ? 0 : targetX;
+            targetY = (targetY>500) ? 500 : targetY;
+            targetY = (targetY<0) ? 0 : targetY;
+            that.me.moveTarget(targetX, targetY);
         });
     };
 
@@ -312,17 +293,18 @@
         // 调值高度，清除 canvas 内的内容
         // this.canvas[0].height = this.canvas[0].height;
         this.context.clearRect(0,0, agar.canvasWidth, agar.canvasHeight);
-        // if (this.map!=null && this.map.move) {
-        //     this.map.move();
-        // }
+        //if (this.map!=null && this.map.move) {
+            // this.map.move();
+        //}
         let that = this;
-        this.socket.send(this.me.user.x + " " + this.me.user.y);
+        this.socket.send(this.me.targetX + " " + this.me.targetY);
         $.each(this.players, function(key, player) {
             player.move();
         });
+        this.me.move();
         setTimeout(function(e){
             that.runTimer();
-        },1000);
+        },10);
     };
 
     $(document).ready(function(){
