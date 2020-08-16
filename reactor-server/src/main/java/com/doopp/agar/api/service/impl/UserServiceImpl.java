@@ -56,8 +56,8 @@ public class UserServiceImpl implements UserService {
         user.setAction("move");
         user.setGrade(1);
         user.setColor(rgb);
-        user.setX(100);
-        user.setY(100);
+        user.setX((int)(Math.random() * 0x1000));
+        user.setY((int)(Math.random() * 0x1000));
         return user;
     }
 }

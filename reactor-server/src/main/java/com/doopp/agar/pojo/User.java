@@ -19,9 +19,9 @@ public class User implements Serializable {
 
     private int grade;
 
-    private float x;
+    private int x;
 
-    private float y;
+    private int y;
 
     public String toString() {
         return this.id
