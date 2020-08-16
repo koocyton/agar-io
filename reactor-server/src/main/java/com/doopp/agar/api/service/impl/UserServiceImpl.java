@@ -10,6 +10,7 @@ import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+import java.awt.*;
 import java.util.UUID;
 
 @Slf4j
@@ -44,10 +45,17 @@ public class UserServiceImpl implements UserService {
         return userToken;
     }
 
-    private User createUser(String nickName) {
+    private User createUser(String name) {
+        int color = (int)(Math.random() * 0x1000000);
+        String rgb = Integer.toHexString(color%256)
+                + Integer.toHexString(color/256%256)
+                + Integer.toHexString(color/256/256%256);
         User user = new User();
         user.setId(idWorker.nextId());
-        user.setNickname(nickName);
+        user.setName(name);
+        user.setAction("move");
+        user.setGrade(1);
+        user.setColor(rgb);
         user.setX(100);
         user.setY(100);
         return user;

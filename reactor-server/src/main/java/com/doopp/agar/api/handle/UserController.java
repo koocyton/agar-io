@@ -27,12 +27,12 @@ public class UserController {
     @Path("/login")
     @Produces(MediaType.APPLICATION_JSON)
     public Mono<UserToken> login(@BeanParam User user) {
-        if (user==null || Strings.isNullOrEmpty(user.getNickname())) {
+        if (user==null || Strings.isNullOrEmpty(user.getName())) {
             return Mono.error(
                     new StandardException(StatusCode.NICK_NOT_EMPTY)
             );
         }
-        return userService.userLogin(user.getNickname());
+        return userService.userLogin(user.getName());
     }
 
     @GET

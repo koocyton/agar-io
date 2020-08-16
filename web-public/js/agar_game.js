@@ -130,9 +130,9 @@
 
         User : {
             login : function() {
-                let elt = $("input[name='nickname']");
+                let elt = $("input[name='name']");
                 if (elt.length===1 && elt[0].value.length>1) {
-                    $.Ajax.post("/api/login", JSON.stringify({"nickname": elt[0].value}), null, function (obj) {
+                    $.Ajax.post("/api/login", JSON.stringify({"name": elt[0].value}), null, function (obj) {
                         if (obj.data!=null && obj.data.user_token.length>1) {
                             $.User.me(obj.data.user_token);
                         }
@@ -220,16 +220,16 @@
     };
 
     Player.prototype.renderName = function() {
-        if (this.user.nickname!=null) {
+        if (this.user.name!=null) {
             this.cell.font = "18px bold 黑体";
             this.cell.fillStyle = this.textStyle;
             this.cell.textAlign = "center";
             this.cell.textBaseline = "middle";
             // this.cell.fillText(this.name, this.x, this.y);
             this.cell.strokeStyle = this.strokeStyle;
-            this.cell.strokeText(this.user.nickname,this.x, this.y);
+            this.cell.strokeText(this.user.name,this.x, this.y);
             this.cell.fillStyle = this.textStyle;
-            this.cell.fillText(this.user.nickname,this.x, this.y);
+            this.cell.fillText(this.user.name,this.x, this.y);
         }
     };
 
@@ -316,7 +316,7 @@
         //     this.map.move();
         // }
         let that = this;
-        this.socket.send(JSON.stringify(this.me.user));
+        this.socket.send(this.me.user.x + " " + this.me.user.y);
         $.each(this.players, function(key, player) {
             player.move();
         });

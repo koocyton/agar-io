@@ -4,6 +4,7 @@ import com.doopp.agar.pojo.User;
 import com.doopp.agar.utils.JsonUtil;
 import com.doopp.reactor.guice.RequestAttribute;
 import com.doopp.reactor.guice.websocket.AbstractWebSocketServerHandle;
+import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.netty.channel.Channel;
@@ -17,6 +18,7 @@ import reactor.netty.http.server.HttpServerRequest;
 import javax.ws.rs.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Path("/ws/agar-io")
 @Slf4j
@@ -42,18 +44,20 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     public Mono<Void> onConnect(Channel channel) {
         RequestAttribute requestAttribute = channel.attr(RequestAttribute.REQUEST_ATTRIBUTE).get();
         User user = requestAttribute.getAttribute("SessionUser", User.class);
+        user.setAction("move");
         addPlayer(channel, user);
-        return Mono.empty();
+        return null;
     }
 
     @Override
     protected Mono<Void> onTextMessage(TextWebSocketFrame frame, Channel channel) {
-        User user = jsonUtil.toObject(frame.text(), User.class);
-        if (user!=null) {
-            // User player = getChannelUser(channel);
-            players.put(user.getId(), user);
+        User user = getChannelUser(channel);
+        if (user!=null && !Strings.isNullOrEmpty(frame.text()) && frame.text().contains(" ")) {
+            String[] xy = frame.text().split(" ");
+            user.setX(Integer.parseInt(xy[0]));
+            user.setY(Integer.parseInt(xy[1]));
         }
-        return Mono.empty();
+        return null;
     }
 
     @Override
@@ -63,7 +67,7 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     }
 
     public void pushPlayers() {
-        String playersJson = jsonUtil.toJsonString(players);
+        String playersJson = playersToString();
         channels.forEach((userId, channel)->{
             if (channel.isOpen()) {
                 this.sendTextMessage(playersJson, channel);
@@ -72,6 +76,14 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
                 channel.close();
             }
         });
+    }
+
+    private String playersToString() {
+        AtomicReference<String> s = new AtomicReference<>("");
+        players.forEach((userId, user)->{
+            s.set("\n"+user.toString());
+        });
+        return s.get();
     }
 
     private Long getChannelUserId(Channel channel) {
