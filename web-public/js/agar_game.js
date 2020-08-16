@@ -278,24 +278,20 @@
 
     Agar.prototype.listenMouse = function() {
         let that = this;
-        this.canvas.on("mousemove", function(ev){
-            let targetX = that.me.user.x + (ev.clientX - that.width/2) / 1000;
-            let targetY = that.me.user.y + (ev.clientY - that.height/2) / 1000;
+        this.canvas.on("mousemove", function(ev) {
+            let targetX = that.me.user.x + Math.floor((ev.clientX - that.width/2) / 1000);
+            let targetY = that.me.user.y + Math.floor((ev.clientY - that.height/2) / 1000);
             targetX = (targetX>500) ? 500 : targetX;
             targetX = (targetX<0) ? 0 : targetX;
             targetY = (targetY>500) ? 500 : targetY;
             targetY = (targetY<0) ? 0 : targetY;
-            that.me.moveTarget(targetX, targetY);
+            $.log.info(that.me.user.x, that.me.user.y, targetX, targetY);
+            // that.me.moveTarget(targetX, targetY);
         });
     };
 
     Agar.prototype.runTimer = function() {
-        // 调值高度，清除 canvas 内的内容
-        // this.canvas[0].height = this.canvas[0].height;
         this.context.clearRect(0,0, agar.canvasWidth, agar.canvasHeight);
-        //if (this.map!=null && this.map.move) {
-            // this.map.move();
-        //}
         let that = this;
         this.socket.send(this.me.targetX + " " + this.me.targetY);
         $.each(this.players, function(key, player) {
