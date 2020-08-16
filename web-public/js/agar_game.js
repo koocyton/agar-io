@@ -135,6 +135,8 @@
         this.canvas = $("canvas#agar-canvas");
         this.context = this.canvas[0].getContext("2d");
         this.socket = null;
+        this.moveToX = 0;
+        this.moveToY = 0;
         this.me = null;
         this.players = {};
         this.resize();
@@ -181,6 +183,10 @@
         let that = this;
         this.connect(token, user, function(){
             that.me = user;
+            that.moveToX = user.x;
+            that.moveToY = user.y;
+            that.refreshCanvas();
+            that.listenMove();
         }, function (user) {
             if (user.id!==that.me.id) {
                 that.players[user.id] = user;
@@ -206,9 +212,9 @@
                         name: receiveUser[1],
                         color: receiveUser[2],
                         action: receiveUser[3],
-                        gradle: receiveUser[4],
-                        x: receiveUser[5],
-                        y: receiveUser[6],
+                        gradle: 1 * receiveUser[4],
+                        x: 1 * receiveUser[5],
+                        y: 1 * receiveUser[6],
                     };
                     onMessage(user);
                 }
@@ -216,12 +222,27 @@
         });
     }
 
+    window.Game.prototype.refreshCanvas = function() {
+        this.canvas.css("background", "#ffffff");
+        $("div.form-content").remove();
+    };
+
     window.Game.prototype.runTimer = function() {
-        log.info(this.me, this.players);
         let that = this;
+        if (this.me!=null && (this.moveToX !== this.me.x || that.moveToY !== this.me.y)) {
+            this.socket.sendString(this.moveToX + " " + this.moveToY);
+        }
         setTimeout(function(e){
             that.runTimer();
         },10);
+    };
+
+    window.Game.prototype.listenMove = function() {
+        let that = this;
+        this.canvas.on("mousemove", function(ev) {
+            that.moveToX = that.me.x + Math.floor((ev.pageX - that.width/2) / 100);
+            that.moveToY = that.me.y + Math.floor((ev.pageY - that.height/2) / 100);
+        });
     };
 
     $(document).ready(function(){
