@@ -2,6 +2,7 @@
 
 服务器有两一个是 Spring(未完成) 一个是 Reactor(完成)，服务端逻辑简单
 
+仅完成移动的逻辑，吃的逻辑还未完成
 
 ```shell script
 #/bin/sh
