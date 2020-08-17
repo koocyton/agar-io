@@ -191,7 +191,7 @@
         }, function (util) {
             if (util.type==="cell") {
                 if (util.id !== that.me.id) {
-                    that.players[util.id] = user;
+                    that.players[util.id] = util;
                 } else {
                     that.me = util;
                 }
