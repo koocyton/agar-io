@@ -1,4 +1,7 @@
-# cell war game server
+# 自制细胞大作战
+
+服务器有两一个是 Spring(未完成) 一个是 Reactor(完成)，服务端逻辑简单
+
 
 ```shell script
 #/bin/sh

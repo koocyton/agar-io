@@ -135,8 +135,8 @@
         this.canvas = $("canvas#agar-canvas");
         this.context = this.canvas[0].getContext("2d");
         this.socket = null;
-        this.moveToX = 0;
-        this.moveToY = 0;
+        this.pageX = 0;
+        this.pageY = 0;
         this.me = null;
         this.players = {};
         this.resize();
@@ -202,8 +202,10 @@
         this.socket.onOpen(function () {
             onOpen();
         });
+        let that = this;
         this.socket.onMessage(function (msg) {
             let receiveUsers = msg.data.split(/\n/);
+            that.players = {0:false};
             receiveUsers.forEach(function (receiveUser) {
                 receiveUser = receiveUser.split(" ");
                 if (receiveUser.length >= 6) {
@@ -219,6 +221,7 @@
                     onMessage(user);
                 }
             });
+            that.players[0] = true;
         });
     }
 
@@ -227,10 +230,76 @@
         $("div.form-content").remove();
     };
 
+    window.Game.prototype.drawMap = function(user) {
+        let interval = 100;
+        let mapWidth = Math.ceil(this.canvasWidth/interval) * interval;
+        let mapHeight = Math.ceil(this.canvasHeight/interval) * interval;
+
+        for (let ii=0; ii<=mapWidth/interval; ii++) {
+            let startX = ii * interval - user.x % interval;
+            this.context.moveTo(startX, 0);
+            this.context.lineTo(startX, this.canvasHeight);
+        }
+        for (let ii=0; ii<=mapHeight/interval; ii++) {
+            let startY = ii * interval - user.y % interval;
+            this.context.moveTo (0, startY);
+            this.context.lineTo(this.canvasWidth, startY);
+        }
+        this.context.lineWidth = 1;
+        this.context.strokeStyle = "#aaa" ;
+        this.context.stroke();
+    };
+
+    window.Game.prototype.drawPlayer = function(user) {
+        let x = user.x - this.me.x + this.canvasWidth / 2;
+        let y = user.y - this.me.y + this.canvasHeight / 2;
+        if (user.id===this.me.id) {
+            x = this.canvasWidth / 2;
+            y = this.canvasHeight / 2;
+        }
+        this.context.beginPath();
+        this.context.fillStyle = "#" + user.color;
+        this.context.moveTo(x, y);
+        this.context.arc(x, y, user.gradle * 40,0,Math.PI*2,20);//x,y坐标,半径,圆周率
+        this.context.closePath();
+        this.context.fill();
+
+        let textStyle = "#FFFFFF";
+        let strokeStyle = "#444444";
+        if (user.name!=null) {
+            this.context.font = "21px bold 黑体";
+            this.context.fillStyle = textStyle;
+            this.context.textAlign = "center";
+            this.context.textBaseline = "middle";
+            this.context.strokeStyle = strokeStyle;
+            this.context.strokeText(user.name, x, y);
+            this.context.fillStyle = textStyle;
+            this.context.fillText(user.name, x, y);
+        }
+    };
+
     window.Game.prototype.runTimer = function() {
+        this.context.clearRect(0,0, this.canvasWidth, this.canvasHeight);
+        if (this.me!=null) {
+            let moveToX = this.me.x + Math.floor((this.pageX - this.width/2) / 100);
+            let moveToY = this.me.y + Math.floor((this.pageY - this.height/2) / 100);
+            moveToX = moveToX<0 ? 0 : moveToX;
+            moveToX = moveToX>3000 ? 3000 : moveToX;
+            moveToY = moveToY<0 ? 0 : moveToY;
+            moveToY = moveToY>3000 ? 3000 : moveToY;
+            if (moveToX!==this.me.x || moveToY!==this.me.y) {
+                this.socket.sendString(moveToX + " " + moveToY);
+            }
+            this.drawMap(this.me)
+        }
         let that = this;
-        if (this.me!=null && (this.moveToX !== this.me.x || that.moveToY !== this.me.y)) {
-            this.socket.sendString(this.moveToX + " " + this.moveToY);
+        if (this.players[0]===true) {
+            $.each(this.players, function (userId, player) {
+                that.drawPlayer(player);
+            });
+        }
+        if (this.me!=null) {
+            this.drawPlayer(this.me);
         }
         setTimeout(function(e){
             that.runTimer();
@@ -240,8 +309,8 @@
     window.Game.prototype.listenMove = function() {
         let that = this;
         this.canvas.on("mousemove", function(ev) {
-            that.moveToX = that.me.x + Math.floor((ev.pageX - that.width/2) / 100);
-            that.moveToY = that.me.y + Math.floor((ev.pageY - that.height/2) / 100);
+            that.pageX = ev.pageX;
+            that.pageY = ev.pageY;
         });
     };
 
