@@ -5,13 +5,9 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class User implements Serializable {
+public class Food implements Serializable {
 
     private static final long serialVersionUID = 5163L;
-
-    private Long id;
-
-    private String name;
 
     private String color;
 
@@ -25,8 +21,6 @@ public class User implements Serializable {
 
     public String toString() {
         return this.type
-                + " " + this.id
-                + " " + this.name
                 + " " + this.color
                 + " " + this.grade
                 + " " + this.x

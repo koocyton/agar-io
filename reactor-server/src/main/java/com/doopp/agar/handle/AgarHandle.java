@@ -1,6 +1,9 @@
 package com.doopp.agar.handle;
 
+import com.doopp.agar.api.service.UserService;
+import com.doopp.agar.pojo.Food;
 import com.doopp.agar.pojo.User;
+import com.doopp.agar.utils.IdWorker;
 import com.doopp.agar.utils.JsonUtil;
 import com.doopp.reactor.guice.RequestAttribute;
 import com.doopp.reactor.guice.websocket.AbstractWebSocketServerHandle;
@@ -29,11 +32,19 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
 
     private final Map<Long, Channel> channels = new ConcurrentHashMap<>();
 
+    private final Map<Long, Food> foods = new ConcurrentHashMap<>();
+
     private final AttributeKey<Long> userIdAttributeKey = AttributeKey.valueOf("UserId");
 
 
     @Inject
     private JsonUtil jsonUtil;
+
+    @Inject
+    private IdWorker idWorker;
+
+    @Inject
+    private UserService userService;
 
     @Override
     public String secWebSocketProtocol(HttpServerRequest request) {
@@ -44,7 +55,6 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     public Mono<Void> onConnect(Channel channel) {
         RequestAttribute requestAttribute = channel.attr(RequestAttribute.REQUEST_ATTRIBUTE).get();
         User user = requestAttribute.getAttribute("SessionUser", User.class);
-        user.setAction("move");
         addPlayer(channel, user);
         return Mono.empty();
     }
@@ -68,12 +78,26 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     }
 
     public void pushPlayers() {
-        String playersString = playersToString();
+        String allUnit = playersToString() + "\n" +  foodsToString();
         channels.forEach((userId, channel)->{
             if (channel.isOpen()) {
-                this.sendTextMessage(playersString, channel);
+                this.sendTextMessage(allUnit, channel);
             }
         });
+    }
+
+    public void addFood() {
+        if (foods.size()<30) {
+            foods.put(idWorker.nextId(), userService.creatFood());
+        }
+    }
+
+    private String foodsToString() {
+        AtomicReference<String> s = new AtomicReference<>("");
+        foods.forEach((userId, food)->{
+            s.set(s.get()+"\n"+food.toString());
+        });
+        return s.get();
     }
 
     private String playersToString() {

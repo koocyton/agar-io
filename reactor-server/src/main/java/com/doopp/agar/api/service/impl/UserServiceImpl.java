@@ -1,6 +1,7 @@
 package com.doopp.agar.api.service.impl;
 
 import com.doopp.agar.api.service.UserService;
+import com.doopp.agar.pojo.Food;
 import com.doopp.agar.pojo.User;
 import com.doopp.agar.pojo.UserToken;
 import com.doopp.agar.utils.IdWorker;
@@ -53,11 +54,26 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setId(idWorker.nextId());
         user.setName(name);
-        user.setAction("move");
-        user.setGrade(1);
+        user.setType("cell");
+        user.setGrade(10);
         user.setColor(rgb);
         user.setX((int)(Math.random() * 0x1000));
         user.setY((int)(Math.random() * 0x1000));
         return user;
+    }
+
+    @Override
+    public Food creatFood() {
+        int color = (int)(Math.random() * 0x1000000);
+        String rgb = Integer.toHexString(color%256)
+                + Integer.toHexString(color/256%256)
+                + Integer.toHexString(color/256/256%256);
+        Food food = new Food();
+        food.setType("food");
+        food.setGrade(2);
+        food.setColor(rgb);
+        food.setX((int)(Math.random() * 0x1000));
+        food.setY((int)(Math.random() * 0x1000));
+        return food;
     }
 }

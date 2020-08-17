@@ -139,6 +139,7 @@
         this.pageY = 0;
         this.me = null;
         this.players = {};
+        this.foods = [];
         this.resize();
     }
 
@@ -187,12 +188,17 @@
             that.moveToY = user.y;
             that.refreshCanvas();
             that.listenMove();
-        }, function (user) {
-            if (user.id!==that.me.id) {
-                that.players[user.id] = user;
+        }, function (util) {
+            if (util.type==="cell") {
+                if (util.id !== that.me.id) {
+                    that.players[util.id] = user;
+                } else {
+                    that.me = util;
+                }
             }
-            else {
-                that.me = user;
+            else if (util.type==="food") {
+                let ii = that.foods.length;
+                that.foods[ii] = util;
             }
         });
     };
@@ -208,17 +214,29 @@
             that.players = {0:false};
             receiveUsers.forEach(function (receiveUser) {
                 receiveUser = receiveUser.split(" ");
-                if (receiveUser.length >= 6) {
-                    let user = {
-                        id: receiveUser[0],
-                        name: receiveUser[1],
-                        color: receiveUser[2],
-                        action: receiveUser[3],
-                        gradle: 1 * receiveUser[4],
-                        x: 1 * receiveUser[5],
-                        y: 1 * receiveUser[6],
-                    };
-                    onMessage(user);
+                if (receiveUser.length >= 4) {
+                    let util = null
+                    if (receiveUser[0]==="cell") {
+                        util = {
+                            type: receiveUser[0],
+                            id: receiveUser[1],
+                            name: receiveUser[2],
+                            color: receiveUser[3],
+                            gradle: 1 * receiveUser[4],
+                            x: 1 * receiveUser[5],
+                            y: 1 * receiveUser[6],
+                        };
+                    }
+                    else if (receiveUser[0]==="food") {
+                        util = {
+                            type: receiveUser[0],
+                            color: receiveUser[1],
+                            gradle: 1 * receiveUser[2],
+                            x: 1 * receiveUser[3],
+                            y: 1 * receiveUser[4],
+                        };
+                    }
+                    onMessage(util);
                 }
             });
             that.players[0] = true;
@@ -260,7 +278,7 @@
         this.context.beginPath();
         this.context.fillStyle = "#" + user.color;
         this.context.moveTo(x, y);
-        this.context.arc(x, y, user.gradle * 40,0,Math.PI*2,20);//x,y坐标,半径,圆周率
+        this.context.arc(x, y, user.gradle * 4,0,Math.PI*2,20);//x,y坐标,半径,圆周率
         this.context.closePath();
         this.context.fill();
 
@@ -278,11 +296,22 @@
         }
     };
 
+    window.Game.prototype.drawFood = function(food) {
+        let x = food.x - this.me.x + this.canvasWidth / 2;
+        let y = food.y - this.me.y + this.canvasHeight / 2;
+        this.context.beginPath();
+        this.context.fillStyle = "#" + food.color;
+        this.context.moveTo(x, y);
+        this.context.arc(x, y, food.gradle * 4,0,Math.PI*2,20);//x,y坐标,半径,圆周率
+        this.context.closePath();
+        this.context.fill();
+    };
+
     window.Game.prototype.runTimer = function() {
         this.context.clearRect(0,0, this.canvasWidth, this.canvasHeight);
         if (this.me!=null) {
-            let moveToX = this.me.x + Math.floor((this.pageX - this.width/2) / 100);
-            let moveToY = this.me.y + Math.floor((this.pageY - this.height/2) / 100);
+            let moveToX = this.me.x + Math.floor((this.pageX - this.width/2) / 50);
+            let moveToY = this.me.y + Math.floor((this.pageY - this.height/2) / 50);
             moveToX = moveToX<0 ? 0 : moveToX;
             moveToX = moveToX>3000 ? 3000 : moveToX;
             moveToY = moveToY<0 ? 0 : moveToY;
@@ -297,13 +326,16 @@
             $.each(this.players, function (userId, player) {
                 that.drawPlayer(player);
             });
+            $.each(this.foods, function (idx, food) {
+                that.drawFood(food);
+            });
         }
         if (this.me!=null) {
             this.drawPlayer(this.me);
         }
         setTimeout(function(e){
             that.runTimer();
-        },10);
+        },30);
     };
 
     window.Game.prototype.listenMove = function() {
