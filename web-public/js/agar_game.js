@@ -307,6 +307,7 @@
         this.context.fill();
     };
 
+    let lastTime = 0;
     window.Game.prototype.runTimer = function() {
         this.context.clearRect(0,0, this.canvasWidth, this.canvasHeight);
         if (this.me!=null) {
@@ -333,9 +334,12 @@
         if (this.me!=null) {
             this.drawPlayer(this.me);
         }
+        let currTime = new Date().getTime();
+        let timeToCall = Math.max(0, 16 - (currTime - lastTime));
         setTimeout(function(e){
             that.runTimer();
-        },30);
+        },timeToCall);
+        lastTime = currTime + timeToCall;
     };
 
     window.Game.prototype.listenMove = function() {
