@@ -14,6 +14,6 @@ public class AgarTask implements Runnable {
 
     public synchronized void run() {
         agarHandle.pushPlayers();
-        agarHandle.addFood();
+        // agarHandle.addFood();
     }
 }
