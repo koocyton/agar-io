@@ -132,6 +132,11 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
                     )
             );
             if (distance<=r && user.getGrade()>player.getGrade()+1000) {
+                Channel channel = channels.get(player.getId());
+                if (channel.isOpen()) {
+                    this.sendTextMessage("youDie", channel);
+                    channels.get(player.getId()).close();
+                }
                 players.remove(player.getId());
                 user.setGrade(user.getGrade() + player.getGrade());
             }

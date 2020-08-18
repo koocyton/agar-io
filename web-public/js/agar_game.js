@@ -212,6 +212,15 @@
         });
         let that = this;
         this.socket.onMessage(function (msg) {
+            if (msg.data==="youDie") {
+                this.me = null;
+                window.alert("You die ...", function () {
+                    game = new Game();
+                    that.socket.close();
+                    $("div.form-content").show();
+                });
+                return;
+            }
             let receiveUsers = msg.data.split(/\n/);
             that.players = {0:false};
             receiveUsers.forEach(function (receiveUser) {
@@ -250,7 +259,7 @@
 
     window.Game.prototype.refreshCanvas = function() {
         this.canvas.css("background", "#ffffff");
-        $("div.form-content").remove();
+        $("div.form-content").hide();
     };
 
     window.Game.prototype.drawMap = function(user) {
