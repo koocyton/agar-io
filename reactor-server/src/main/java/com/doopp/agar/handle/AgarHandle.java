@@ -123,6 +123,19 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
                 user.setGrade(user.getGrade() + food.getGrade());
             }
         }
+
+        for(User player : players.values()) {
+            double distance = Math.sqrt(
+                    Math.abs(
+                            (user.getX() - player.getX()) * (user.getX() - player.getX())
+                                    + (user.getY() - player.getY()) * (user.getY() - player.getY())
+                    )
+            );
+            if (distance<=r && user.getGrade()>player.getGrade()+1000) {
+                players.remove(player.getId());
+                user.setGrade(user.getGrade() + player.getGrade());
+            }
+        }
         return user;
     }
 
