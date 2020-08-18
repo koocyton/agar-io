@@ -34,7 +34,11 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
 
     private final Map<Long, Food> foods = new ConcurrentHashMap<>();
 
+    private final Map<Long, Food> removeFoods = new ConcurrentHashMap<>();
+
     private final AttributeKey<Long> userIdAttributeKey = AttributeKey.valueOf("UserId");
+
+    private final static double PI = 3.1415926;
 
     @Inject
     private UserService userService;
@@ -72,12 +76,16 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     }
 
     public void pushPlayers() {
-        String players = playersToString();
+        String playersString = playersToString();
+        String removeFoodsString = removeFoodsToString();
         channels.forEach((userId, channel)->{
             if (channel.isOpen()) {
-                this.sendTextMessage(players, channel);
+                this.sendTextMessage(playersString + "\n" +  removeFoodsString, channel);
             }
         });
+        for(Food food : this.removeFoods.values()) {
+            this.removeFoods.remove(food.getId());
+        }
     }
 
     public void pushFood() {
@@ -101,23 +109,46 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     }
 
     private User forage(User user) {
+        double r = Math.sqrt(user.getGrade()/PI);
+        for(Food food : foods.values()) {
+            double distance = Math.sqrt(
+                    Math.abs(
+                            (user.getX() - food.getX()) * (user.getX() - food.getX())
+                            + (user.getY() - food.getY()) * (user.getY() - food.getY())
+                    )
+            );
+            if (distance<=r) {
+                foods.remove(food.getId());
+                removeFoods.put(food.getId(), food);
+                user.setGrade(user.getGrade() + food.getGrade());
+            }
+        }
         return user;
     }
 
+    private String removeFoodsToString() {
+        StringBuilder s = new StringBuilder();
+        for(Food food : removeFoods.values()) {
+            food.setType("remove-food");
+            s.append(food.toString());
+        }
+        return s.toString();
+    }
+
     private String playersToString() {
-        AtomicReference<String> s = new AtomicReference<>("");
-        players.forEach((userId, user)->{
-            s.set(s.get()+"\n"+user.toString());
-        });
-        return s.get();
+        StringBuilder s = new StringBuilder();
+        for(User user : players.values()) {
+            s.append(user.toString());
+        }
+        return s.toString();
     }
 
     private String foodsToString() {
-        AtomicReference<String> s = new AtomicReference<>("");
-        foods.forEach((userId, food)->{
-            s.set(s.get()+"\n"+food.toString());
-        });
-        return s.get();
+        StringBuilder s = new StringBuilder();
+        for(Food food : foods.values()) {
+            s.append(food.toString());
+        }
+        return s.toString();
     }
 
     private Long getChannelUserId(Channel channel) {

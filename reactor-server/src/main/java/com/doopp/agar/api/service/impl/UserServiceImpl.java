@@ -57,8 +57,8 @@ public class UserServiceImpl implements UserService {
         user.setType("cell");
         user.setGrade(6000);
         user.setColor(rgb);
-        user.setX((int)(Math.random() * 0x2000));
-        user.setY((int)(Math.random() * 0x2000));
+        user.setX((int)(Math.random() * 0x1500));
+        user.setY((int)(Math.random() * 0x1500));
         return user;
     }
 
@@ -73,8 +73,8 @@ public class UserServiceImpl implements UserService {
         food.setType("food");
         food.setGrade(2000);
         food.setColor(rgb);
-        food.setX((int)(Math.random() * 0x2000));
-        food.setY((int)(Math.random() * 0x2000));
+        food.setX((int)(Math.random() * 0x1500));
+        food.setY((int)(Math.random() * 0x1500));
         return food;
     }
 }

@@ -199,6 +199,9 @@
             else if (util.type==="food") {
                 that.foods[util.id] = util;
             }
+            else if (util.type==="remove-food") {
+                delete that.foods[util.id];
+            }
         });
     };
 
@@ -226,7 +229,7 @@
                             y: 1 * receiveUser[6],
                         };
                     }
-                    else if (receiveUser[0]==="food") {
+                    else if (receiveUser[0]==="food" || receiveUser[0]==="remove-food") {
                         util = {
                             type: receiveUser[0],
                             id: receiveUser[1],
@@ -236,7 +239,9 @@
                             y: 1 * receiveUser[5],
                         };
                     }
-                    onMessage(util);
+                    if (util!=null) {
+                        onMessage(util);
+                    }
                 }
             });
             that.players[0] = true;
