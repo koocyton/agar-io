@@ -214,11 +214,10 @@
         this.socket.onMessage(function (msg) {
             if (msg.data==="youDie") {
                 this.me = null;
-                window.alert("You die ...", function () {
-                    game = new Game();
-                    that.socket.close();
-                    $("div.form-content").show();
-                });
+                window.alert("You die ...");
+                $("div.form-content").show();
+                that.socket.close();
+                game = new Game();
                 return;
             }
             let receiveUsers = msg.data.split(/\n/);
