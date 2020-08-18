@@ -138,7 +138,7 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     private String playersToString() {
         StringBuilder s = new StringBuilder();
         for(User user : players.values()) {
-            s.append(user.toString());
+            s.append("\n").append(user.toString());
         }
         return s.toString();
     }
@@ -146,7 +146,7 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     private String foodsToString() {
         StringBuilder s = new StringBuilder();
         for(Food food : foods.values()) {
-            s.append(food.toString());
+            s.append("\n").append(food.toString());
         }
         return s.toString();
     }
