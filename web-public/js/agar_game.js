@@ -215,9 +215,7 @@
             if (msg.data==="youDie") {
                 this.me = null;
                 window.alert("You die ...");
-                $("div.form-content").show();
-                that.socket.close();
-                game = new Game();
+                location.reload();
                 return;
             }
             let receiveUsers = msg.data.split(/\n/);
