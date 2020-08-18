@@ -139,7 +139,7 @@
         this.pageY = 0;
         this.me = null;
         this.players = {};
-        this.foods = [];
+        this.foods = {};
         this.resize();
     }
 
@@ -197,8 +197,7 @@
                 }
             }
             else if (util.type==="food") {
-                let ii = that.foods.length;
-                that.foods[ii] = util;
+                that.foods[util.id] = util;
             }
         });
     };
@@ -230,10 +229,11 @@
                     else if (receiveUser[0]==="food") {
                         util = {
                             type: receiveUser[0],
-                            color: receiveUser[1],
-                            gradle: 1 * receiveUser[2],
-                            x: 1 * receiveUser[3],
-                            y: 1 * receiveUser[4],
+                            id: receiveUser[1],
+                            color: receiveUser[2],
+                            gradle: 1 * receiveUser[3],
+                            x: 1 * receiveUser[4],
+                            y: 1 * receiveUser[5],
                         };
                     }
                     onMessage(util);
@@ -278,7 +278,7 @@
         this.context.beginPath();
         this.context.fillStyle = "#" + user.color;
         this.context.moveTo(x, y);
-        this.context.arc(x, y, user.gradle * 4,0,Math.PI*2,20);//x,y坐标,半径,圆周率
+        this.context.arc(x, y, Math.sqrt(user.gradle/Math.PI),0,Math.PI*2,20);//x,y坐标,半径,圆周率
         this.context.closePath();
         this.context.fill();
 
@@ -302,7 +302,7 @@
         this.context.beginPath();
         this.context.fillStyle = "#" + food.color;
         this.context.moveTo(x, y);
-        this.context.arc(x, y, food.gradle * 4,0,Math.PI*2,20);//x,y坐标,半径,圆周率
+        this.context.arc(x, y, Math.sqrt(food.gradle/Math.PI),0,Math.PI*2,20);//x,y坐标,半径,圆周率
         this.context.closePath();
         this.context.fill();
     };
@@ -313,10 +313,12 @@
         if (this.me!=null) {
             let moveToX = this.me.x + Math.floor((this.pageX - this.width/2) / 50);
             let moveToY = this.me.y + Math.floor((this.pageY - this.height/2) / 50);
-            moveToX = moveToX<0 ? 0 : moveToX;
-            moveToX = moveToX>3000 ? 3000 : moveToX;
-            moveToY = moveToY<0 ? 0 : moveToY;
-            moveToY = moveToY>3000 ? 3000 : moveToY;
+            moveToX = moveToX<(0-this.width/2) ? 0-this.width/2 : moveToX;
+            moveToX = moveToX>(3000+this.width/2) ? 3000+this.width/2 : moveToX;
+            moveToY = moveToY<0-this.height/2 ? 0-this.height/2 : moveToY;
+            moveToY = moveToY>3000+this.height/2 ? 3000+this.height/2 : moveToY;
+            moveToX = Math.floor(moveToX);
+            moveToY = Math.floor(moveToY);
             if (moveToX!==this.me.x || moveToY!==this.me.y) {
                 this.socket.sendString(moveToX + " " + moveToY);
             }
@@ -324,11 +326,11 @@
         }
         let that = this;
         if (this.players[0]===true) {
+            $.each(this.foods, function (userId, food) {
+                that.drawFood(food);
+            });
             $.each(this.players, function (userId, player) {
                 that.drawPlayer(player);
-            });
-            $.each(this.foods, function (idx, food) {
-                that.drawFood(food);
             });
         }
         if (this.me!=null) {

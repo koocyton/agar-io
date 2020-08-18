@@ -9,6 +9,8 @@ public class Food implements Serializable {
 
     private static final long serialVersionUID = 5163L;
 
+    private Long id;
+
     private String color;
 
     private String type;
@@ -21,6 +23,7 @@ public class Food implements Serializable {
 
     public String toString() {
         return this.type
+                + " " + this.id
                 + " " + this.color
                 + " " + this.grade
                 + " " + this.x

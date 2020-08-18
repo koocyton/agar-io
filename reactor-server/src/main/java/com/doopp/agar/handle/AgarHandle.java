@@ -36,13 +36,6 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
 
     private final AttributeKey<Long> userIdAttributeKey = AttributeKey.valueOf("UserId");
 
-
-    @Inject
-    private JsonUtil jsonUtil;
-
-    @Inject
-    private IdWorker idWorker;
-
     @Inject
     private UserService userService;
 
@@ -56,6 +49,7 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
         RequestAttribute requestAttribute = channel.attr(RequestAttribute.REQUEST_ATTRIBUTE).get();
         User user = requestAttribute.getAttribute("SessionUser", User.class);
         addPlayer(channel, user);
+        pushFoods(channel);
         return Mono.empty();
     }
 
@@ -66,7 +60,7 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
             String[] xy = frame.text().split(" ");
             user.setX(Integer.parseInt(xy[0]));
             user.setY(Integer.parseInt(xy[1]));
-            players.put(user.getId(), user);
+            players.put(user.getId(), forage(user));
         }
         return Mono.empty();
     }
@@ -78,32 +72,50 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     }
 
     public void pushPlayers() {
-        String allUnit = playersToString() + "\n" +  foodsToString();
+        String players = playersToString();
         channels.forEach((userId, channel)->{
             if (channel.isOpen()) {
-                this.sendTextMessage(allUnit, channel);
+                this.sendTextMessage(players, channel);
             }
         });
     }
 
-    public void addFood() {
-        if (foods.size()<30) {
-            foods.put(idWorker.nextId(), userService.creatFood());
+    public void pushFood() {
+        if (this.foods.size()>10000) {
+            return;
+        }
+        Food food = userService.creatFood();
+        this.foods.put(food.getId(), food);
+        channels.forEach((userId, channel)->{
+            if (channel.isOpen()) {
+                this.sendTextMessage(food.toString(), channel);
+            }
+        });
+    }
+
+    public void pushFoods(Channel channel) {
+        String foods = foodsToString();
+        if (channel.isOpen()) {
+            this.sendTextMessage(foods, channel);
         }
     }
 
-    private String foodsToString() {
-        AtomicReference<String> s = new AtomicReference<>("");
-        foods.forEach((userId, food)->{
-            s.set(s.get()+"\n"+food.toString());
-        });
-        return s.get();
+    private User forage(User user) {
+        return user;
     }
 
     private String playersToString() {
         AtomicReference<String> s = new AtomicReference<>("");
         players.forEach((userId, user)->{
             s.set(s.get()+"\n"+user.toString());
+        });
+        return s.get();
+    }
+
+    private String foodsToString() {
+        AtomicReference<String> s = new AtomicReference<>("");
+        foods.forEach((userId, food)->{
+            s.set(s.get()+"\n"+food.toString());
         });
         return s.get();
     }

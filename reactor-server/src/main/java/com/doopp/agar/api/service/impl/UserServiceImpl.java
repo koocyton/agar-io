@@ -55,10 +55,10 @@ public class UserServiceImpl implements UserService {
         user.setId(idWorker.nextId());
         user.setName(name);
         user.setType("cell");
-        user.setGrade(10);
+        user.setGrade(6000);
         user.setColor(rgb);
-        user.setX((int)(Math.random() * 0x1000));
-        user.setY((int)(Math.random() * 0x1000));
+        user.setX((int)(Math.random() * 0x2000));
+        user.setY((int)(Math.random() * 0x2000));
         return user;
     }
 
@@ -69,11 +69,12 @@ public class UserServiceImpl implements UserService {
                 + Integer.toHexString(color/256%256)
                 + Integer.toHexString(color/256/256%256);
         Food food = new Food();
+        food.setId(idWorker.nextId());
         food.setType("food");
-        food.setGrade(2);
+        food.setGrade(2000);
         food.setColor(rgb);
-        food.setX((int)(Math.random() * 0x1000));
-        food.setY((int)(Math.random() * 0x1000));
+        food.setX((int)(Math.random() * 0x2000));
+        food.setY((int)(Math.random() * 0x2000));
         return food;
     }
 }

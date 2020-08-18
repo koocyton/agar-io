@@ -12,8 +12,14 @@ public class AgarTask implements Runnable {
     @Inject
     private AgarHandle agarHandle;
 
+    private int timer = 0;
+
     public synchronized void run() {
         agarHandle.pushPlayers();
-        // agarHandle.addFood();
+        timer++;
+        if (timer>50) {
+            agarHandle.pushFood();
+            timer= 0;
+        }
     }
 }
