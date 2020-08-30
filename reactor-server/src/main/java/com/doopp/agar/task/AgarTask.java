@@ -15,11 +15,14 @@ public class AgarTask implements Runnable {
     private int timer = 0;
 
     public synchronized void run() {
+        agarHandle.playersOnMove();
         agarHandle.pushPlayers();
         timer++;
-        if (timer>50) {
+        if (timer>100) {
             agarHandle.pushFood();
             timer= 0;
         }
+        // 用户移动
+        // new Thread(() -> agarHandle.playersOnMove()).start();
     }
 }

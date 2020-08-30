@@ -19,12 +19,15 @@ public class User implements Serializable {
 
     private int grade;
 
-    private int x;
+    private double x;
 
-    private int y;
+    private double y;
+
+    private long time;
 
     public String toString() {
         return this.type
+                + " " + this.time
                 + " " + this.id
                 + " " + this.name
                 + " " + this.color

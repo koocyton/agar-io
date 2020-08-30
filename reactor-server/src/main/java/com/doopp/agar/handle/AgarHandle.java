@@ -3,8 +3,6 @@ package com.doopp.agar.handle;
 import com.doopp.agar.api.service.UserService;
 import com.doopp.agar.pojo.Food;
 import com.doopp.agar.pojo.User;
-import com.doopp.agar.utils.IdWorker;
-import com.doopp.agar.utils.JsonUtil;
 import com.doopp.reactor.guice.RequestAttribute;
 import com.doopp.reactor.guice.websocket.AbstractWebSocketServerHandle;
 import com.google.common.base.Strings;
@@ -21,7 +19,6 @@ import reactor.netty.http.server.HttpServerRequest;
 import javax.ws.rs.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Path("/ws/agar-io")
 @Slf4j
@@ -62,9 +59,11 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
         User user = getChannelUser(channel);
         if (user!=null && !Strings.isNullOrEmpty(frame.text()) && frame.text().contains(" ")) {
             String[] xy = frame.text().split(" ");
-            user.setX(Integer.parseInt(xy[0]));
-            user.setY(Integer.parseInt(xy[1]));
-            players.put(user.getId(), forage(user));
+            double moveToX = Double.parseDouble(xy[0]);
+            double moveToY = Double.parseDouble(xy[1]);
+            user.setX(moveToX < 0 ? 0 : moveToX>5000 ? 5000 : moveToX);
+            user.setY(moveToY < 0 ? 0 : moveToY>5000 ? 5000 : moveToY);
+            // addPlayer(channel, user);
         }
         return Mono.empty();
     }
@@ -89,7 +88,7 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     }
 
     public void pushFood() {
-        if (this.foods.size()>10000) {
+        if (this.foods.size()>1000) {
             return;
         }
         Food food = userService.creatFood();
@@ -108,7 +107,13 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
         }
     }
 
-    private User forage(User user) {
+    public void playersOnMove() {
+        for(User player : players.values()) {
+            this.forage(player);
+        }
+    }
+
+    private void forage(User user) {
         double r = Math.sqrt(user.getGrade()/PI);
         for(Food food : foods.values()) {
             double distance = Math.sqrt(
@@ -120,7 +125,7 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
             if (distance<=r) {
                 foods.remove(food.getId());
                 removeFoods.put(food.getId(), food);
-                user.setGrade(user.getGrade() + food.getGrade());
+                user.setGrade(user.getGrade() + food.getGrade()/2);
             }
         }
 
@@ -138,10 +143,9 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
                     channels.get(player.getId()).close();
                 }
                 players.remove(player.getId());
-                user.setGrade(user.getGrade() + player.getGrade());
+                user.setGrade(user.getGrade() + player.getGrade()/2);
             }
         }
-        return user;
     }
 
     private String removeFoodsToString() {
@@ -154,8 +158,10 @@ public class AgarHandle extends AbstractWebSocketServerHandle {
     }
 
     private String playersToString() {
+        long currentTime = System.currentTimeMillis();
         StringBuilder s = new StringBuilder();
         for(User user : players.values()) {
+            user.setTime(currentTime);
             s.append("\n").append(user.toString());
         }
         return s.toString();

@@ -25,6 +25,8 @@ body>.navbar {border-radius:0;background-color:rgba(10,10,10,0.78);}
 .form-content-right {width:80%;height:calc(100% - 50px);padding:20px 0 0 0;}
 .form-content>.scroll-container{overflow-x:hidden;overflow-y:scroll;}
 
+.modal-version {position:absolute;bottom:0;left:0;color:#ffffff;}
+
 @media (min-width: 768px) {
     .bs-grid {margin-right: 0;margin-left: 0;}
     .bs-grid li {width: 12.5%;font-size: 12px;}

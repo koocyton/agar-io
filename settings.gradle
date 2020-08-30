@@ -8,7 +8,9 @@
  */
 
 rootProject.name = 'agar-io'
-// Spring Server
+// Spring boot Server
+include 'boot-server'
+// Spring mvc Server
 include 'spring-server'
 // Reactor Server
 include 'reactor-server'

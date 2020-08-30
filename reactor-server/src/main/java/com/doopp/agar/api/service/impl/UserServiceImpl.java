@@ -11,7 +11,6 @@ import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
-import java.awt.*;
 import java.util.UUID;
 
 @Slf4j
@@ -59,6 +58,7 @@ public class UserServiceImpl implements UserService {
         user.setColor(rgb);
         user.setX((int)(Math.random() * 0x1500));
         user.setY((int)(Math.random() * 0x1500));
+        user.setTime(System.currentTimeMillis());
         return user;
     }
 
@@ -73,8 +73,8 @@ public class UserServiceImpl implements UserService {
         food.setType("food");
         food.setGrade(1000);
         food.setColor(rgb);
-        food.setX((int)(Math.random() * 0x1500) - 1000);
-        food.setY((int)(Math.random() * 0x1500) - 1000);
+        food.setX((int)(Math.random() * 0x1500));
+        food.setY((int)(Math.random() * 0x1500));
         return food;
     }
 }

@@ -30,3 +30,4 @@ dump.rdb
 develop.properties
 */.classpath
 */bin
+.classpath

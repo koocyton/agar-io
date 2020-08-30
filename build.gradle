@@ -1,10 +1,20 @@
+buildscript {
+	repositories {
+		maven{ url 'http://maven.aliyun.com/nexus/content/groups/public/'}
+		// maven { url 'https://repo.spring.io/libs-snapshot' }
+	}
+	dependencies {
+		classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.3.0.RELEASE'
+		classpath "io.spring.gradle:dependency-management-plugin:1.0.9.RELEASE"
+	}
+}
+
 allprojects {
 	group 'com.doopp.agar'
 	version '1.0'
 
 	apply plugin: 'java'
 	apply plugin: 'application'
-
 }
 
 // 所有子项目的通用配置
@@ -18,8 +28,15 @@ subprojects {
 	[compileJava,compileTestJava,javadoc]*.options*.encoding = 'UTF-8'
 
 	ext {
-		springVersion = '5.2.1.RELEASE'
+		springVersion = '5.2.6.RELEASE'
 		undertowVersion = '2.0.28.Final'
+		jacksonVersion = '2.11.0'
+		lombokVersion = '1.18.12'
+		jedisVersion = '2.9.0'
+		slf4jVersion = '1.7.30'
+		springBootVersion = '2.3.0.RELEASE'
+		springManagementVersion = '1.0.9.RELEASE'
+		junitVersion = '4.13'
 	}
 
 	repositories {
@@ -34,22 +51,22 @@ subprojects {
 
 		// JSON
 		// compile 'com.google.code.gson:gson:2.8.2'
-		compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.5'
-		compile 'com.fasterxml.jackson.core:jackson-core:2.9.5'
-		compile 'com.fasterxml.jackson.core:jackson-databind:2.9.5'
+		compile "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+		compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+		compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
 
 		// Util
-		compileOnly 'org.projectlombok:lombok:1.18.8'
-		annotationProcessor 'org.projectlombok:lombok:1.18.8'
+		compileOnly "org.projectlombok:lombok:${lombokVersion}"
+		annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
 		// Redis
-		compile 'redis.clients:jedis:2.9.0'
+		compile "redis.clients:jedis:${jedisVersion}"
 
 		// slf4j
-		compile 'org.slf4j:slf4j-api:1.7.25'
-		compile 'org.slf4j:slf4j-log4j12:1.7.25'
+		// compile "org.slf4j:slf4j-api:${slf4jVersion}"
+		// compile "org.slf4j:slf4j-log4j12:${slf4jVersion}"
 
-		testCompile group: 'junit', name: 'junit', version: '4.12'
+		testCompile "junit:junit:${junitVersion}"
 	}
 
 	tasks.withType(JavaCompile) {
@@ -69,27 +86,31 @@ project(':spring-server') {
 	dependencies {
 
 		// spring core
-		compile "org.springframework:spring-core:$springVersion"
-		compile "org.springframework:spring-aop:$springVersion"
-		compile "org.springframework:spring-context:$springVersion"
-		compile "org.springframework:spring-context-support:$springVersion"
-		compile "org.springframework:spring-beans:$springVersion"
-		compile "org.springframework:spring-web:$springVersion"
-		compile "org.springframework:spring-webmvc:$springVersion"
-		compile "org.springframework:spring-oxm:$springVersion"
-		compile "org.springframework:spring-expression:$springVersion"
-		compile "org.springframework:spring-tx:$springVersion"
-		// compile "org.springframework:spring-jdbc:$springVersion"
-		// compile "org.springframework:spring-test:$springVersion"
+		compile "org.springframework:spring-core:${springVersion}"
+		compile "org.springframework:spring-aop:${springVersion}"
+		compile "org.springframework:spring-context:${springVersion}"
+		compile "org.springframework:spring-context-support:${springVersion}"
+		compile "org.springframework:spring-beans:${springVersion}"
+		compile "org.springframework:spring-web:${springVersion}"
+		compile "org.springframework:spring-webmvc:${springVersion}"
+		compile "org.springframework:spring-oxm:${springVersion}"
+		compile "org.springframework:spring-expression:${springVersion}"
+		compile "org.springframework:spring-tx:${springVersion}"
+		// compile "org.springframework:spring-jdbc:${springVersion}"
+		// compile "org.springframework:spring-test:${springVersion}"
 
 
 		// undertow
-		compile "io.undertow:undertow-core:$undertowVersion"
-		compile "io.undertow:undertow-servlet:$undertowVersion"
-		// compile "io.undertow:undertow-websockets-jsr:$undertowVersion"
+		compile "io.undertow:undertow-core:${undertowVersion}"
+		compile "io.undertow:undertow-servlet:${undertowVersion}"
+		// compile "io.undertow:undertow-websockets-jsr:${undertowVersion}"
 
 		// Redis
 		compile 'org.springframework.data:spring-data-redis:1.8.6.RELEASE'
+
+		// slf4j
+		compile "org.slf4j:slf4j-api:${slf4jVersion}"
+		compile "org.slf4j:slf4j-log4j12:${slf4jVersion}"
 	}
 
 	jar {
@@ -115,6 +136,10 @@ project(':reactor-server') {
 		compile 'com.doopp:reactor-guice:0.12.10'
 		// Redis & Serializable
 		compile 'com.esotericsoftware:kryo:4.0.2'
+
+		// slf4j
+		compile "org.slf4j:slf4j-api:${slf4jVersion}"
+		compile "org.slf4j:slf4j-log4j12:${slf4jVersion}"
 	}
 
 	jar {
@@ -131,5 +156,27 @@ project(':reactor-server') {
 				it.isDirectory() ? it : zipTree(it)
 			}
 		}
+	}
+}
+
+project(':boot-server') {
+	apply plugin: 'org.springframework.boot'
+	apply plugin: 'io.spring.dependency-management'
+	configurations {
+		compileOnly {
+			extendsFrom annotationProcessor
+		}
+	}
+	dependencies {
+		implementation "org.springframework.boot:spring-boot-starter-web"
+		implementation "org.springframework.boot:spring-boot-starter-websocket"
+		// compileOnly 'org.projectlombok:lombok'
+		// annotationProcessor 'org.projectlombok:lombok'
+		testImplementation('org.springframework.boot:spring-boot-starter-test') {
+			exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+		}
+	}
+	test {
+		useJUnitPlatform()
 	}
 }

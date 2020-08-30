@@ -140,6 +140,8 @@
         this.me = null;
         this.players = {};
         this.foods = {};
+        this.lastToX = null;
+        this.lastToY = null;
         this.resize();
     }
 
@@ -191,9 +193,26 @@
         }, function (util) {
             if (util.type==="cell") {
                 if (util.id !== that.me.id) {
-                    that.players[util.id] = util;
+                    if (typeof that.players[util.id]=="undefined" || that.players[util.id].time<util.time) {
+                        that.players[util.id] = util;
+                    }
                 } else {
-                    that.me = util;
+                    if (that.me==null || that.me.time<util.time) {
+                        if (that.lastToX == null || that.lastToY == null) {
+                            that.lastToX = that.me.x;
+                            that.lastToY = that.me.y;
+                        }
+                        that.me = util;
+                    }
+                    else {
+                        log.info({
+                            "message" : "接受到的超时的数据",
+                            "me_time": that.me.time,
+                            "util_time": util.time,
+                            "me": that.me,
+                            "util":util
+                        });
+                    }
                 }
             }
             else if (util.type==="food") {
@@ -227,12 +246,13 @@
                     if (receiveUser[0]==="cell") {
                         util = {
                             type: receiveUser[0],
-                            id: receiveUser[1],
-                            name: receiveUser[2],
-                            color: receiveUser[3],
-                            gradle: 1 * receiveUser[4],
-                            x: 1 * receiveUser[5],
-                            y: 1 * receiveUser[6],
+                            time: 1 * receiveUser[1],
+                            id: receiveUser[2],
+                            name: receiveUser[3],
+                            color: receiveUser[4],
+                            gradle: 1 * receiveUser[5],
+                            x: 1 * receiveUser[6],
+                            y: 1 * receiveUser[7],
                         };
                     }
                     else if (receiveUser[0]==="food" || receiveUser[0]==="remove-food") {
@@ -251,6 +271,7 @@
                 }
             });
             that.players[0] = true;
+            that.runTimer();
         });
     }
 
@@ -296,7 +317,7 @@
         let textStyle = "#FFFFFF";
         let strokeStyle = "#444444";
         if (user.name!=null) {
-            this.context.font = "21px bold 黑体";
+            this.context.font = (user.gradle / Math.PI / 2000 * 22) + "px bold 黑体";
             this.context.fillStyle = textStyle;
             this.context.textAlign = "center";
             this.context.textBaseline = "middle";
@@ -318,21 +339,9 @@
         this.context.fill();
     };
 
-    let lastTime = 0;
     window.Game.prototype.runTimer = function() {
         this.context.clearRect(0,0, this.canvasWidth, this.canvasHeight);
         if (this.me!=null) {
-            let moveToX = this.me.x + Math.floor((this.pageX - this.width/2) / 50);
-            let moveToY = this.me.y + Math.floor((this.pageY - this.height/2) / 50);
-            moveToX = moveToX<(0-this.width/2) ? 0-this.width/2 : moveToX;
-            moveToX = moveToX>(3000+this.width/2) ? 3000+this.width/2 : moveToX;
-            moveToY = moveToY<0-this.height/2 ? 0-this.height/2 : moveToY;
-            moveToY = moveToY>3000+this.height/2 ? 3000+this.height/2 : moveToY;
-            moveToX = Math.floor(moveToX);
-            moveToY = Math.floor(moveToY);
-            if (moveToX!==this.me.x || moveToY!==this.me.y) {
-                this.socket.sendString(moveToX + " " + moveToY);
-            }
             this.drawMap(this.me)
         }
         let that = this;
@@ -347,12 +356,9 @@
         if (this.me!=null) {
             this.drawPlayer(this.me);
         }
-        let currTime = new Date().getTime();
-        let timeToCall = Math.max(0, 16 - (currTime - lastTime));
-        setTimeout(function(e){
-            that.runTimer();
-        },timeToCall);
-        lastTime = currTime + timeToCall;
+        //requestAnimationFrame(function(time){
+        //    that.runTimer();
+        //});
     };
 
     window.Game.prototype.listenMove = function() {
@@ -361,6 +367,38 @@
             that.pageX = ev.pageX;
             that.pageY = ev.pageY;
         });
+        this.sendMoveData();
+    };
+
+    // let lastTime = 0;
+    window.Game.prototype.sendMoveData = function() {
+        if (this.me!=null) {
+            let moveXSpeed = (this.pageX - this.width/2) / 40;
+            let moveYSpeed = (this.pageY - this.height/2) / 40;
+            let maxXSpeed = moveXSpeed>=0 ? 6 : -6;
+            let maxYSpeed = moveYSpeed>=0 ? 6 : -6;
+            let moveToX = Math.abs(moveXSpeed)>6 ? this.me.x + maxXSpeed : this.me.x + moveXSpeed;
+            let moveToY = Math.abs(moveYSpeed)>6 ? this.me.y + maxYSpeed : this.me.y + moveYSpeed;
+            // moveToX = moveToX < 0 ? 0 : (moveToX > 5000 ? 5000 : moveToX);
+            // moveToY = moveToY < 0 ? 0 : (moveToY > 5000 ? 5000 : moveToY);
+            // if (moveToX!==this.me.x || moveToY!==this.me.y) {
+            // if (this.lastToX===this.me.x && this.lastToY===this.me.y) {
+            this.socket.sendString(moveToX + " " + moveToY);
+            // this.lastToX=moveToX;
+            // this.lastToY=moveToY;
+            // }
+            // }
+        }
+        let that=this;
+        requestAnimationFrame(function(time){
+            that.sendMoveData();
+        });
+        // let currTime = new Date().getTime();
+        // let timeToCall = Math.max(0, 16 - (currTime - lastTime));
+        // setTimeout(function(){
+        //    that.sendMoveData();
+        // },8.3);
+        // lastTime = currTime + timeToCall;
     };
 
     $(document).ready(function(){
