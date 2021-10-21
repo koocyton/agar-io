@@ -1,0 +1,33 @@
+body{overflow:hidden;}
+label{font-weight:normal;}
+input,button,button:focus,button:active,button:visited,a:focus,a:active{outline:none;}
+
+body .container{width:100%;}
+.blur-10 {-webkit-filter:blur(10px); -moz-filter:blur(10px); -ms-filter:blur(10px); filter:blur(10px);}
+
+/* 背景图 */
+.filling {height:100%;width:100%;top:0;left:0;}
+#agar-container {position:relative; overflow:hidden; background:rgba(0,0,0,0) url(agar_bg.png) no-repeat scroll 0 0 / cover;}
+#agar-canvas {position:absolute;}
+.opacity-92 {opacity:0.92;-moz-opacity:0.92;FILTER:progid:DXImageTransform.Microsoft.Alpha(opacity=92);}
+.opacity-82 {opacity:0.82;-moz-opacity:0.82;FILTER:progid:DXImageTransform.Microsoft.Alpha(opacity=82);}
+.opacity-0 {opacity:0;-moz-opacity:0;FILTER:progid:DXImageTransform.Microsoft.Alpha(opacity=0);}
+input.image-input {position:absolute;top:0;left:0;width:100%;height:100%;}
+
+/* 导航的菜单 */
+.navbar>.container{width:100%;}
+body>.navbar {border-radius:0;background-color:rgba(10,10,10,0.78);}
+
+/* 正文部分 和 左右内容 */
+.form-content {position:absolute;height:100%;width:360px;left:calc(50% - 180px);top:31%;}
+.form-content-left, .form-content-right {float:left;display:inline-block;background:#ffffff no-repeat scroll 0 0 / cover;}
+.form-content-left {width:20%;height:calc(100% - 50px);padding:3px 0 0 0;}
+.form-content-right {width:80%;height:calc(100% - 50px);padding:20px 0 0 0;}
+.form-content>.scroll-container{overflow-x:hidden;overflow-y:scroll;}
+
+.modal-version {position:absolute;bottom:0;left:0;color:#ffffff;}
+
+@media (min-width: 768px) {
+    .bs-grid {margin-right: 0;margin-left: 0;}
+    .bs-grid li {width: 12.5%;font-size: 12px;}
+}

@@ -1,0 +1,143 @@
+buildscript {
+	repositories {
+		maven{ url 'https://maven.aliyun.com/repository/central'}
+	}
+	dependencies {
+		classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.8'
+	}
+}
+
+// 所有子项目的通用配置
+allprojects {
+	group 'com.doopp.iogame'
+	version '1.0'
+	apply plugin: 'java'
+	apply plugin: 'application'
+	apply plugin: 'com.google.protobuf'
+	// JVM 版本号要求
+	sourceCompatibility = 1.8
+	targetCompatibility = 1.8
+	// java编译的时候缺省状态下会因为中文字符而失败
+	[compileJava,compileTestJava,javadoc]*.options*.encoding = 'UTF-8'
+	ext {
+		springVersion = '5.2.8.RELEASE'
+		undertowVersion = '2.1.3.Final'
+		jacksonVersion = '2.12.5'
+		mapstructVersion = '1.3.1.Final'
+		lombokVersion = '1.18.8'
+		guttyVersion = '1.15.2'
+		slf4jVersion = '1.8.0-beta4'
+		log4jVersion = '2.14.1'
+		grpcVersion = '1.14.0'
+	}
+	repositories {
+		mavenLocal()
+		// maven{ url 'https://repo1.maven.org/maven2'}
+		maven{ url 'https://maven.aliyun.com/repository/central'}
+		maven{ url 'https://maven.aliyun.com/repository/public'}
+		maven{ url 'https://maven.aliyun.com/repository/google'}
+		// maven { url 'https://jitpack.io' }
+	}
+	tasks.withType(JavaCompile) {
+		options.encoding = "UTF-8"
+	}
+}
+
+project(':iogame-server') {
+
+	dependencies {
+		// captcha
+		// compile 'com.github.whvcse:EasyCaptcha:1.6.2'
+		// spring core
+		compile "com.doopp:gutty:${guttyVersion}"
+
+		// for java9
+		compile 'javax.activation:activation:1.1.1'
+
+		compile 'com.google.protobuf:protobuf-java:3.18.0'
+
+		// JSON
+		// compile 'com.google.code.gson:gson:2.8.2'
+		compile "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+		compile "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+		compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+
+		// compile ("org.asynchttpclient:async-http-client:2.12.3") {
+		//	exclude group: 'io.netty'
+		// }		// okhttp3
+		// compile "com.squareup.okhttp3:okhttp:4.0.1"
+
+		// Util
+		compileOnly "org.projectlombok:lombok:${lombokVersion}"
+		annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+		// database
+		// compile ('com.zaxxer:HikariCP:3.4.5') {
+		//	exclude group: 'org.slf4j'
+		// }
+		// compile 'org.mybatis:mybatis:3.5.7'
+		// compile ('org.mybatis:mybatis-guice:3.12') {
+		//	exclude group: 'org.slf4j'
+		// }
+		// compile 'mysql:mysql-connector-java:8.0.26'
+		// compile 'com.github.pagehelper:pagehelper:5.2.1'
+
+		// Redis
+		compile 'redis.clients:jedis:3.7.0'
+
+		// Util
+		compile "org.mapstruct:mapstruct-jdk8:${mapstructVersion}"
+		annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+		// slf4j
+		// compile "org.slf4j:slf4j-api:${slf4jVersion}"
+		// compile "org.slf4j:slf4j-log4j12:${slf4jVersion}"
+		// log4j
+		compile "org.apache.logging.log4j:log4j-api:${log4jVersion}"
+		compile "org.apache.logging.log4j:log4j-core:${log4jVersion}"
+		compile "org.apache.logging.log4j:log4j-slf4j-impl:${log4jVersion}"
+		// compile "org.apache.logging.log4j:log4j-jcl:${log4jVersion}"
+
+		// email
+		// compile 'javax.mail:mail:1.4.7'
+
+		// compile 'org.freemarker:freemarker:2.3.23'
+		compile "commons-codec:commons-codec:1.11"
+
+		testCompile 'junit:junit:4.12'
+	}
+
+	protobuf {
+		generatedFilesBaseDir = "$projectDir/src/"
+		protoc {
+			//从仓库下载
+			artifact = 'com.google.protobuf:protoc:3.0.0'
+			// path = 'D:\\developer\\protoc\\bin\\protoc'
+		}
+	}
+
+	sourceSets {
+		mainClassName = "com.doopp.iogame.MVCApplication" as SourceSet
+	}
+
+	jar {
+		manifest {
+			attributes(
+					"Manifest-Version": 1.0,
+					"Main-Class": "com.doopp.iogame.MVCApplication",
+					"Class-Path": "./",
+					"Implementation-Title": "Gradle"
+			)
+		}
+		from {
+			configurations.compile.collect {
+				it.isDirectory() ? it : zipTree(it)
+			}
+		}
+	}
+	task clear(type:Delete){
+		// delete 'build','target'
+	}
+	task release(type: Copy, dependsOn: [clear, jar]) {
+	}
+}
