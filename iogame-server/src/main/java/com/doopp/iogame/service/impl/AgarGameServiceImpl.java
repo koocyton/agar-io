@@ -2,6 +2,7 @@ package com.doopp.iogame.service.impl;
 
 import com.doopp.gutty.json.MessageConverter;
 import com.doopp.iogame.message.MyResponse;
+import com.doopp.iogame.pojo.Element;
 import com.doopp.iogame.pojo.Food;
 import com.doopp.iogame.pojo.Move;
 import com.doopp.iogame.pojo.User;
@@ -9,6 +10,7 @@ import com.doopp.iogame.service.GameService;
 import com.doopp.gutty.annotation.Service;
 import com.doopp.iogame.service.LoginService;
 import com.doopp.iogame.util.IdWorker;
+import com.google.common.collect.HashBasedTable;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.netty.channel.Channel;
@@ -17,6 +19,7 @@ import io.netty.util.AttributeKey;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,7 +31,11 @@ public class AgarGameServiceImpl implements GameService {
 
     final private Map<Integer, User> userMap = new ConcurrentHashMap<>();
 
+    final private HashBasedTable<Integer, Integer, Map<Integer, Integer>> userIndexTable = HashBasedTable.create();
+
     final private Map<Integer, Food> foodMap = new ConcurrentHashMap<>();
+
+    final private HashBasedTable<Integer, Integer, Map<Integer, Integer>> foodIndexTable = HashBasedTable.create();
 
     final private Map<Integer, Channel> channelMap = new ConcurrentHashMap<>();
 
@@ -42,6 +49,16 @@ public class AgarGameServiceImpl implements GameService {
 
     @Inject
     private IdWorker idWorker;
+
+    @Inject
+    private void initElement() {
+        for(int x=0; x<200; x++){
+            for(int y=0; y<200; y++){
+                foodIndexTable.put(x, y, new ConcurrentHashMap<>());
+                userIndexTable.put(x, y, new ConcurrentHashMap<>());
+            }
+        }
+    }
 
     @Override
     public Map<Integer, User> getUserMap() {
@@ -57,17 +74,9 @@ public class AgarGameServiceImpl implements GameService {
         userLeave(user.id);
         // 注册到 channel 信息里
         channel.attr(AttributeKey.<Integer>valueOf("UserId")).set(user.id);
+        // 初始化数据
+        user.initData();
         // 记录 user & channel 的索引
-        user.grade = 3999;
-        user.type = "cell";
-        user.x = (int) (Math.random()*0x1500);
-        user.y = (int) (Math.random()*0x1500);
-        user.time = System.currentTimeMillis();
-        int _color = (int)(Math.random() * 0x1000000);
-        user.color = Integer.toHexString(_color%256)
-                + Integer.toHexString(_color/256%256)
-                + Integer.toHexString(_color/256/256%256);
-
         userMap.put(user.id, user);
         channelMap.put(user.id, channel);
         sendToUser(user, new MyResponse<>(user, 0, "you connected"));
@@ -119,26 +128,20 @@ public class AgarGameServiceImpl implements GameService {
         userMove(user, move);
     }
 
-    public void createFood() {
-        if (foodMap.size()>=500) {
-            return;
+    public Food createFood() {
+        if (foodMap.size()>=600) {
+            return null;
         }
         if (idWorker.nextId()%1000!=0) {
-            return;
+            return null;
         }
-        int color = (int)(Math.random() * 0x1000000);
-        String rgb = Integer.toHexString(color%256)
-                + Integer.toHexString(color/256%256)
-                + Integer.toHexString(color/256/256%256);
-        Food food = new Food();
-        food.setId(foodId.getAndAdd(1));
-        food.setType("food");
-        food.setGrade(1000);
-        food.setColor(rgb);
-        food.setX((int)(Math.random() * 0x1500));
-        food.setY((int)(Math.random() * 0x1500));
-        foodMap.put(food.getId(), food);
-        sendToAllUsers(new ArrayList<Food>(){{add(food);}});
+        Food food = new Food(foodId.getAndAdd(1));
+        foodMap.put(food.id, food);
+        Integer foodXIndex = (int) (food.x / 30);
+        Integer foodYIndex = (int) (food.y / 30);
+        // log.info("{} {} {}", foodXIndex, foodYIndex, foodIndexTable.get(foodXIndex, foodYIndex));
+        foodIndexTable.get(foodXIndex, foodYIndex).put(food.id, food.id);
+        return food;
     }
 
     private <T> void userMove(User moveUser, Move move) {
@@ -162,9 +165,55 @@ public class AgarGameServiceImpl implements GameService {
 
     @Override
     public void runDaemon() {
-        createFood();
+        Food food = createFood();
+        List<Food> cFood = collisionCheck();
         if (userMap.size()>0) {
-            sendToAllUsers(userMap.values());
+            List<Element> elements = new ArrayList<>(userMap.values());
+            if (food!=null) {
+               elements.add(food);
+            }
+            if (cFood.size()>=1) {
+                elements.addAll(cFood);
+            }
+            sendToAllUsers(elements);
         }
+    }
+
+    private List<Food> collisionCheck() {
+        List<Food> removeFoodList = new ArrayList<>();
+        userMap.forEach((k, user)->{
+            double r = Math.ceil(Math.sqrt(user.grade/3.14159));
+            double leftX  = user.x-r;
+            double rightX = user.x+r;
+            double upY    = user.y+r;
+            double downY  = user.y-r;
+            int leftIdx   = (int) (leftX / 30);
+            int rightIdx  = (int) (rightX / 30);
+            int upIdx     = (int) (upY / 30);
+            int downIdx   = (int) (downY / 30);
+            // 范围查找
+            for (int x=leftIdx; x<=rightIdx; x++) {
+                for (int y=downIdx; y<=upIdx; y++) {
+                    Map<Integer, Integer> foodIndexMap = foodIndexTable.get(x, y);
+                    if (foodIndexMap==null) {
+                        continue;
+                    }
+                    foodIndexMap.forEach((_id, id)->{
+                        Food food = foodMap.get(id);
+                        double dx = (user.x - food.x);
+                        double dy = (user.y - food.y);
+                        double dr = Math.sqrt(Math.abs(dx*dx + dy*dy));
+                        if (dr<r) {
+                            food.type = "remove-food";
+                            removeFoodList.add(food);
+                            foodMap.remove(food.id);
+                            foodIndexMap.remove(food.id);
+                            user.grade = user.grade + food.grade;
+                        }
+                    });
+                }
+            }
+        });
+        return removeFoodList;
     }
 }

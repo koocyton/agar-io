@@ -221,8 +221,11 @@
                         that.moveToY = e.y;
                     }
                 }
-                else if (e.type==="food" || e.type==="remove-food") {
+                else if (e.type==="food") {
                     that.foods[e.id] = e;
+                }
+                else if (e.type==="remove-food") {
+                    delete that.foods[e.id];
                 }
             });
             that.players[0] = true;

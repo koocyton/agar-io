@@ -1,11 +1,11 @@
-buildscript {
-	repositories {
-		maven{ url 'https://maven.aliyun.com/repository/central'}
-	}
-	dependencies {
-		classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.8'
-	}
-}
+//buildscript {
+//	repositories {
+//		maven{ url 'https://maven.aliyun.com/repository/central'}
+//	}
+//	dependencies {
+//		classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.8'
+//	}
+//}
 
 // 所有子项目的通用配置
 allprojects {
@@ -13,7 +13,7 @@ allprojects {
 	version '1.0'
 	apply plugin: 'java'
 	apply plugin: 'application'
-	apply plugin: 'com.google.protobuf'
+	// apply plugin: 'com.google.protobuf'
 	// JVM 版本号要求
 	sourceCompatibility = 1.8
 	targetCompatibility = 1.8
@@ -54,7 +54,7 @@ project(':iogame-server') {
 		// for java9
 		compile 'javax.activation:activation:1.1.1'
 
-		compile 'com.google.protobuf:protobuf-java:3.18.0'
+		// compile 'com.google.protobuf:protobuf-java:3.18.0'
 
 		// JSON
 		// compile 'com.google.code.gson:gson:2.8.2'
@@ -107,14 +107,14 @@ project(':iogame-server') {
 		testCompile 'junit:junit:4.12'
 	}
 
-	protobuf {
-		generatedFilesBaseDir = "$projectDir/src/"
-		protoc {
-			//从仓库下载
-			artifact = 'com.google.protobuf:protoc:3.0.0'
-			// path = 'D:\\developer\\protoc\\bin\\protoc'
-		}
-	}
+//	protobuf {
+//		generatedFilesBaseDir = "$projectDir/src/"
+//		protoc {
+//			//从仓库下载
+//			artifact = 'com.google.protobuf:protoc:3.0.0'
+//			// path = 'D:\\developer\\protoc\\bin\\protoc'
+//		}
+//	}
 
 	sourceSets {
 		mainClassName = "com.doopp.iogame.MVCApplication" as SourceSet

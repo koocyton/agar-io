@@ -4,6 +4,8 @@ import com.doopp.gutty.Gutty;
 import com.doopp.gutty.json.JacksonMessageConverter;
 import com.doopp.gutty.redis.*;
 import com.doopp.iogame.filter.WsFilter;
+import com.doopp.iogame.service.GameService;
+import com.doopp.iogame.service.impl.AgarGameServiceImpl;
 import com.doopp.iogame.task.AgarGameTask;
 import com.doopp.iogame.util.IdWorker;
 import com.google.inject.*;
@@ -68,8 +70,7 @@ public class MVCApplication {
                 }
             )
             .addInjectorConsumer(injector->{
-                // GameService agarGameService = injector.getInstance(Key.get(AgarGameServiceImpl.class));
-                // agarGameService.runDaemon();
+                // run task
                 ScheduledExecutorService newScheduledThreadPool = Executors.newScheduledThreadPool(4);
                 newScheduledThreadPool.scheduleWithFixedDelay(injector.getInstance(AgarGameTask.class), 4, 10, TimeUnit.MILLISECONDS);
             })

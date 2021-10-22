@@ -2,13 +2,10 @@ package com.doopp.iogame.socket;
 
 import com.doopp.gutty.annotation.websocket.*;
 import com.doopp.iogame.pojo.Move;
-import com.doopp.iogame.pojo.User;
-import com.doopp.iogame.proto.message.MessageProto;
 import com.doopp.iogame.service.GameService;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import io.netty.channel.Channel;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import lombok.extern.log4j.Log4j2;
 
 import javax.ws.rs.HeaderParam;

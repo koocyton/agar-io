@@ -1,35 +1,30 @@
 package com.doopp.iogame.pojo;
 
-import java.io.Serializable;
+public class User extends Element {
 
-public class User implements Serializable {
-
-    private static final long serialVersionUID = 5163L;
-
-    public Integer id;
+    public User(){
+    }
 
     public String name;
 
-    public String color;
-
-    public String type;
-
-    public int grade;
-
-    public double x;
-
-    public double y;
-
     public long time;
-
-    public User() {
-
-    }
 
     public User(Integer id, String name) {
         this.id = id;
         this.name = name;
         this.type = "cell";
+    }
+
+    public void initData() {
+        this.grade = 3999;
+        this.type = "cell";
+        this.x = (int) (Math.random()*0x1500);
+        this.y = (int) (Math.random()*0x1500);
+        this.time = System.currentTimeMillis();
+        int _color = (int)(Math.random() * 0x1000000);
+        this.color = Integer.toHexString(_color%256)
+                + Integer.toHexString(_color/256%256)
+                + Integer.toHexString(_color/256/256%256);
     }
 
     public String toString() {

@@ -4,14 +4,10 @@ import com.doopp.gutty.annotation.Controller;
 import com.doopp.iogame.message.MyResponse;
 import com.doopp.iogame.pojo.User;
 import com.doopp.iogame.pojo.UserToken;
-import com.doopp.iogame.proto.hello.HelloReply;
 import com.doopp.iogame.service.GameService;
 import com.doopp.iogame.service.LoginService;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.google.protobuf.Descriptors;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpRequest;
 import lombok.extern.log4j.Log4j2;
 
 import javax.ws.rs.*;
