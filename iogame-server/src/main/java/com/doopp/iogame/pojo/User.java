@@ -21,7 +21,7 @@ public class User extends Element {
         this.x = (int) (Math.random()*0x1500);
         this.y = (int) (Math.random()*0x1500);
         this.time = System.currentTimeMillis();
-        int _color = (int)(Math.random() * 0x1000000);
+        int _color = (int)(Math.random() * 0x100000 + 0x100000);
         this.color = Integer.toHexString(_color%256)
                 + Integer.toHexString(_color/256%256)
                 + Integer.toHexString(_color/256/256%256);

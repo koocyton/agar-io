@@ -132,21 +132,21 @@ public class AgarGameServiceImpl implements GameService {
         if (foodMap.size()>=600) {
             return null;
         }
-        if (idWorker.nextId()%1000!=0) {
+        if (idWorker.nextId()%100!=0) {
             return null;
         }
         Food food = new Food(foodId.getAndAdd(1));
         foodMap.put(food.id, food);
         Integer foodXIndex = (int) (food.x / 30);
         Integer foodYIndex = (int) (food.y / 30);
-        // log.info("{} {} {}", foodXIndex, foodYIndex, foodIndexTable.get(foodXIndex, foodYIndex));
         foodIndexTable.get(foodXIndex, foodYIndex).put(food.id, food.id);
         return food;
     }
 
     private <T> void userMove(User moveUser, Move move) {
-        moveUser.x = move.x<0 ? 0 : move.x>5000 ? 5000 : move.x;
-        moveUser.y = move.y<0 ? 0 : move.y>5000 ? 5000 : move.y;
+        double r = Math.sqrt(moveUser.grade/Math.PI);
+        moveUser.x = move.x<r ? r : Math.min(move.x, 5000.00 - r);
+        moveUser.y = move.y<r ? r : Math.min(move.y, 5000.00 - r);
         moveUser.time = System.currentTimeMillis();
     }
 
@@ -182,7 +182,7 @@ public class AgarGameServiceImpl implements GameService {
     private List<Food> collisionCheck() {
         List<Food> removeFoodList = new ArrayList<>();
         userMap.forEach((k, user)->{
-            double r = Math.ceil(Math.sqrt(user.grade/3.14159));
+            double r = Math.ceil(Math.sqrt(user.grade/Math.PI));
             double leftX  = user.x-r;
             double rightX = user.x+r;
             double upY    = user.y+r;
@@ -213,6 +213,33 @@ public class AgarGameServiceImpl implements GameService {
                     });
                 }
             }
+            userMap.forEach((_k, _other)->{
+                if (k.equals(_k)) {
+                    return;
+                }
+                if (Math.abs(user.grade - _other.grade)<_other.grade/10) {
+                    return;
+                }
+                double dx = (user.x - _other.x);
+                double dy = (user.y - _other.y);
+                double dr = Math.sqrt(Math.abs(dx*dx + dy*dy));
+                if (dr<r) {
+                    User loser = (user.grade > _other.grade) ? _other : user;
+                    loser.type = "remove-cell";
+                    userMap.remove(loser.id);
+                    Channel channel = channelMap.get(loser.id);
+                    if (channel!=null && channel.isOpen()) {
+                        sendToUser(loser, new MyResponse<>(user, 0, "you failed"));
+                        channel.close();
+                        if (user.grade > _other.grade) {
+                            user.grade = user.grade + _other.grade;
+                        }
+                        else {
+                            _other.grade = user.grade + _other.grade;
+                        }
+                    }
+                }
+            });
         });
         return removeFoodList;
     }

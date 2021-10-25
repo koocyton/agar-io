@@ -11,14 +11,19 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Agar io game</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/style.css?v=2020.08.27.252" rel="stylesheet">
+    <link href="css/style.css?v=2021.10.24.1901" rel="stylesheet">
     <script src="js/jquery-1.11.3.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
-    <script src="js/agar_game.js?v=2020.08.27.252"></script>
+    <script src="js/agar_game.js?v=2021.10.24.1901"></script>
 </head>
 <body>
 <div class="filling" id="agar-container">
     <canvas class="filling" id="agar-canvas"></canvas>
+    <div style="position:fixed; top:20px; right:20px; margin: 30px; padding:30px; background:black; opacity:0.5;">
+        <span id="my-x" style="width:90px;font-size:20px;color:#ffffff;text-align: right"></span>
+        <span style="width:20px;font-size:20px;color:#ffffff;">&nbsp;x&nbsp;</span>
+        <span id="my-y" style="width:90px;font-size:20px;color:#ffffff;text-align: left"></span>
+    </div>
 </div>
 <div class="form-content">
     <form onsubmit="return Game.start();">

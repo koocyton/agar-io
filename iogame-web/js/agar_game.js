@@ -20,6 +20,25 @@
         }
     };
 
+    let lightenDarkenColor = function (col, amt) {
+        let usePound = false;
+        if (col[0] === "#") {
+            col = col.slice(1);
+            usePound = true;
+        }
+        let num = parseInt(col,16);
+        let r = (num >> 16) + amt;
+        if (r > 255) r = 255;
+        else if (r < 0) r = 0;
+        let b = ((num >> 8) & 0x00FF) + amt;
+        if (b > 255) b = 255;
+        else if (b < 0) b = 0;
+        let g = (num & 0x0000FF) + amt;
+        if (g > 255) g = 255;
+        else if (g < 0) g = 0;
+        return (usePound?"#":"") + (g | (b << 8) | (r << 16)).toString(16);
+    }
+
     let ajax = {
         ajaxRequest: function (url, method, data, headers, onSuccess, onError, onComplete) {
             // set headers
@@ -79,42 +98,67 @@
         let protocol = /^https/.test(window.location.protocol) ? "wss\:\/\/" : "ws\:\/\/";
         this.url = /^ws/.test(uri) ? uri : protocol + window.location.host + uri;
         this.protocolHeaders = protocolHeaders;
+        this.ws = null;
+        this.connect();
+    }
+
+    window.socket.prototype.connect = function() {
+
+        if (this.ws!=null) {
+            this.ws.close();
+            this.status = false;
+        }
+
         this.ws = (typeof (this.protocolHeaders) === "object")
             ? new WebSocket(this.url, this.protocolHeaders)
             : new WebSocket(this.url);
+
+        let that = this;
+        this.openCall = null;
+        this.ws.onopen = function (ev) {
+            if (typeof that.openCall==="function") {
+                that.openCall(ev);
+            }
+        }
+
+        this.closeCall = null;
+        this.ws.onclose = function (ev) {
+            that.status = false;
+            if (typeof that.closeCall==="function") {
+                that.closeCall(ev);
+            }
+        }
+
+        this.errorCall = null;
+        this.ws.onerror = function (ev) {
+            that.status = false;
+            if (typeof that.errorCall==="function") {
+                that.errorCall(ev);
+            }
+        }
+
+        this.messageCall = null;
+        this.ws.onmessage = function (ev) {
+            if (typeof that.messageCall==="function") {
+                that.messageCall(ev);
+            }
+        }
         this.status = true;
     };
-    window.socket.prototype.reconnect = function () {
-        this.ws = (typeof (this.protocolHeaders) === "object")
-            ? new WebSocket(this.url, this.protocolHeaders)
-            : new WebSocket(this.url);
+    window.socket.prototype.onOpen = function (openCall) {
+        this.openCall = openCall;
     };
-    window.socket.prototype.onOpen = function (callOpen) {
-        if (typeof callOpen === "function") {
-            this.ws.onopen = callOpen;
-        }
-        return this;
+    window.socket.prototype.onClose = function (closeCall) {
+        this.closeCall = closeCall;
     };
-    window.socket.prototype.onClose = function (callClose) {
-        if (typeof callClose === "function") {
-            this.ws.onclose = callClose;
-        }
-        return this;
+    window.socket.prototype.onError = function (errorCall) {
+        this.errorCall = errorCall;
     };
-    window.socket.prototype.onError = function (callError) {
-        if (typeof callError === "function") {
-            this.ws.onerror = callError;
-        }
-        return this;
-    };
-    window.socket.prototype.onMessage = function (callMessage) {
-        if (typeof callMessage === "function") {
-            this.ws.onmessage = callMessage;
-        }
-        return this;
+    window.socket.prototype.onMessage = function (messageCall) {
+        this.messageCall = messageCall;
     };
     window.socket.prototype.sendString = function (message) {
-        if (this.status===true) {
+        if (this.ws!=null && this.status===true) {
             this.ws.send(message);
         }
     };
@@ -124,13 +168,15 @@
         }
     };
     window.socket.prototype.sendBinary = function (obj) {
-        this.ws.send(JSON.stringify(obj));
+        this.ws.send(obj);
     };
     window.socket.prototype.close = function () {
         try {
             this.status = false;
             this.ws.close();
-        } catch (e) {
+        }
+        catch (e) {
+            ;
         }
     };
 
@@ -162,14 +208,6 @@
 
     window.Game.login = function (onSuccess) {
         let name = $("input[name='name']").val();
-        // let myInfoRequest = function(token) {
-        //     let headers = {"User-Token": token};
-        //     ajax.get("/api/me", headers, function (obj) {
-        //         if (obj && obj.code === 0) {
-        //             onSuccess(token, obj.data);
-        //         }
-        //     });
-        // }
         ajax.post("/api/register", JSON.stringify({"name": name}), null, function (obj) {
             if (obj.data != null && obj.data.user_token.length > 1) {
                 onSuccess(obj.data.user_token)
@@ -192,6 +230,10 @@
         let that = this;
         this.socket = new socket("/ws/agar-game", ["User-Token", token]);
         this.socket.onOpen(function () {
+            that.players = {};
+            that.foods = {};
+        });
+        this.socket.onClose(function(e){
         });
         this.socket.onMessage(function (msg) {
             if (typeof msg==="undefined" || typeof msg.data==="undefined") {
@@ -207,18 +249,39 @@
                 that.moveToY = rec.data.y;
                 that.refreshCanvas();
                 that.listenMove();
+                that.players = {0:false};
                 return;
             }
+            if (typeof rec.msg!=="undefined" && rec.msg==="you failed") {
+                if (window.confirm("不哭，再来一局 ...")) {
+                    window.top.location.href = "/";
+                }
+                return;
+            }
+            if (that.me===null) {
+                return;
+            }
+            let oldPlayers = that.players;
             that.players = {0:false};
+            // log.info(oldPlayers);
             rec.forEach(function(e) {
                 if (e.type==="cell") {
                     if (e.id!==that.me.id) {
+                        let _e = oldPlayers[e.id];
+                        if (typeof _e==="undefined") {
+                            e["ox"]=0; e["oy"]=0; e["tx"]=e.x; e["ty"]=e.y;
+                            e.time = new Date().getTime();
+                        }
+                        else {
+                            e["ox"]=_e.x; e["oy"]=_e.y; e["tx"]=e.x; e["ty"]=e.y;
+                            e.x = _e.x;
+                            e.y = _e.y;
+                            e.time = new Date().getTime();
+                        }
                         that.players[e.id] = e;
                     }
                     else {
-                        that.me = e;
-                        that.moveToX = e.x;
-                        that.moveToY = e.y;
+                        that.me.grade = e.grade;
                     }
                 }
                 else if (e.type==="food") {
@@ -229,7 +292,6 @@
                 }
             });
             that.players[0] = true;
-            // that.runTimer();
         });
     };
 
@@ -238,17 +300,22 @@
         $("div.form-content").hide();
     };
 
-    window.Game.prototype.drawMap = function(user) {
-        let interval = 100;
+    window.Game.prototype.drawMap = function() {
+        if(this.me==null) {
+            return;
+        }
+        let interval = 50;
         let mapWidth = Math.ceil(this.canvasWidth/interval) * interval;
         let mapHeight = Math.ceil(this.canvasHeight/interval) * interval;
         for (let ii=0; ii<=mapWidth/interval; ii++) {
-            let startX = ii * interval - user.x % interval;
+            let startX = (ii * interval - this.me.x % interval) * this.devicePixelRatio;
+            // let startX = Math.floor(ii * interval - this.me.y % interval) - this.devicePixelRatio / 2;
             this.context.moveTo(startX, 0);
             this.context.lineTo(startX, this.canvasHeight);
         }
         for (let ii=0; ii<=mapHeight/interval; ii++) {
-            let startY = ii * interval - user.y % interval;
+            let startY = (ii * interval - this.me.y % interval) * this.devicePixelRatio;
+            // let startY = Math.floor(ii * interval - this.me.y % interval) - this.devicePixelRatio / 2;
             this.context.moveTo (0, startY);
             this.context.lineTo(this.canvasWidth, startY);
         }
@@ -257,63 +324,97 @@
         this.context.stroke();
     };
 
-    window.Game.prototype.drawPlayer = function(user) {
-        let x = user.x - this.me.x + this.canvasWidth / 2;
-        let y = user.y - this.me.y + this.canvasHeight / 2;
-        if (user.id===this.me.id) {
+    window.Game.prototype.elementOutRange = function(e) {
+        let r = Math.sqrt(e.grade / Math.PI);
+        let leftX  = this.me.x - (this.canvasWidth / 2) - r;
+        let rightX = this.me.x + (this.canvasWidth / 2) + r;
+        let downY  = this.me.y - (this.canvasHeight / 2) - r;
+        let upY    = this.me.y + (this.canvasHeight / 2) + r;
+        return (e.x > rightX || e.x < leftX || e.y > upY || e.y < downY);
+    }
+
+    window.Game.prototype.drawElement = function(e, alignCenter) {
+        // if (this.elementOutRange(e)) {
+        //     return;
+        // }
+        let x, y;
+        if (alignCenter) {
             x = this.canvasWidth / 2;
             y = this.canvasHeight / 2;
         }
+        else if (e.type==="cell") {
+            let t = new Date().getTime() - e.time;
+            if (t>=100) {
+                t = 100;
+            }
+            e.x = (e.tx-e.ox)*t/100+e.ox;
+            e.y = (e.ty-e.oy)*t/100+e.oy;
+            x = e.x - this.me.x + this.canvasWidth / 2;
+            y = e.y - this.me.y + this.canvasHeight / 2;
+        }
+        else if (e.type==="food") {
+            if (this.elementOutRange(e)) {
+                return;
+            }
+            x = e.x - this.me.x + this.canvasWidth / 2;
+            y = e.y - this.me.y + this.canvasHeight / 2;
+        }
+        else {
+            return;
+        }
+
         this.context.beginPath();
-        this.context.fillStyle = "#" + user.color;
+        this.context.fillStyle = "#" + e.color;
         this.context.moveTo(x, y);
-        this.context.arc(x, y, Math.sqrt(user.grade/Math.PI),0,Math.PI*2,20);//x,y坐标,半径,圆周率
+        this.context.arc(x, y, Math.sqrt(e.grade/Math.PI),0,Math.PI*2, false);//x,y坐标,半径,圆周率
         this.context.closePath();
         this.context.fill();
 
-        let textStyle = "#FFFFFF";
-        let strokeStyle = "#444444";
-        if (user.name!=null) {
-            this.context.font = (user.grade / Math.PI / 2000 * 22) + "px bold 黑体";
+        if (e.type==="food") {
+            this.context.beginPath();
+            this.context.fillStyle = lightenDarkenColor("#" + e.color, +40);
+            this.context.arc(x, y, Math.sqrt(e.grade / Math.PI) * 0.70, 0, Math.PI * 2, false);//
+            this.context.closePath();
+            this.context.fill();
+        }
+        if (e.name!=null) {
+            let textStyle = "#FFFFFF";
+            let strokeStyle = "#444444";
+            this.context.font = Math.floor(Math.sqrt(e.grade / Math.PI)*0.68) + "px bold 宋体";
             this.context.fillStyle = textStyle;
             this.context.textAlign = "center";
             this.context.textBaseline = "middle";
             this.context.strokeStyle = strokeStyle;
-            this.context.strokeText(user.name, x, y);
+            this.context.strokeText(e.name, x, y);
             this.context.fillStyle = textStyle;
-            this.context.fillText(user.name, x, y);
+            this.context.fillText(e.name, x, y);
         }
-    };
-
-    window.Game.prototype.drawFood = function(food) {
-        let x = food.x - this.me.x + this.canvasWidth / 2;
-        let y = food.y - this.me.y + this.canvasHeight / 2;
-        this.context.beginPath();
-        this.context.fillStyle = "#" + food.color;
-        this.context.moveTo(x, y);
-        this.context.arc(x, y, Math.sqrt(food.grade/Math.PI),0,Math.PI*2,20);//x,y坐标,半径,圆周率
-        this.context.closePath();
-        this.context.fill();
     };
 
     window.Game.prototype.runTimer = function() {
-        this.context.clearRect(0,0, this.canvasWidth, this.canvasHeight);
-        if (this.me!=null) {
-            this.drawMap(this.me)
+        if (this.me==null) {
+            let that = this;
+            requestAnimationFrame(function(){
+                that.runTimer();
+            });
+            return;
         }
+        this.context.canvas.width = this.context.canvas.width;
+        // this.context.clearRect(0,0, this.canvasWidth, this.canvasHeight);
+        this.drawMap()
         let that = this;
         if (this.players[0]===true) {
             $.each(this.foods, function (userId, food) {
-                that.drawFood(food);
+                that.drawElement(food, false);
             });
             $.each(this.players, function (userId, player) {
-                that.drawPlayer(player);
+                that.drawElement(player, false);
             });
         }
-        if (this.me!=null) {
-            this.drawPlayer(this.me);
-        }
-        requestAnimationFrame(function(time){
+        this.drawElement(this.me, true);
+        $("span#my-x").html(Math.ceil(this.me.x));
+        $("span#my-y").html(Math.ceil(this.me.y));
+        requestAnimationFrame(function(){
            that.runTimer();
         });
     };
@@ -324,39 +425,34 @@
             that.pageX = ev.pageX;
             that.pageY = ev.pageY;
         });
-        this.sendMoveData();
+        this.loopMoveData();
+        setInterval(function(){
+            that.socket.sendJson({x: that.me.tx, y: that.me.ty});
+        }, 100);
     };
 
     // let lastTime = 0;
-    window.Game.prototype.sendMoveData = function() {
+    window.Game.prototype.loopMoveData = function() {
         if (this.me!=null) {
-            let moveXSpeed = (this.pageX - this.width/2) / 40;
-            let moveYSpeed = (this.pageY - this.height/2) / 40;
-            let maxXSpeed = moveXSpeed>=0 ? 6 : -6;
-            let maxYSpeed = moveYSpeed>=0 ? 6 : -6;
-            let moveToX = Math.abs(moveXSpeed)>6 ? this.me.x + maxXSpeed : this.me.x + moveXSpeed;
-            let moveToY = Math.abs(moveYSpeed)>6 ? this.me.y + maxYSpeed : this.me.y + moveYSpeed;
-            // moveToX = moveToX < 0 ? 0 : (moveToX > 5000 ? 5000 : moveToX);
-            // moveToY = moveToY < 0 ? 0 : (moveToY > 5000 ? 5000 : moveToY);
-            // if (moveToX!==this.me.x || moveToY!==this.me.y) {
-            // if (this.lastToX===this.me.x && this.lastToY===this.me.y) {
-            let x = {x:moveToX, y:moveToY};
-            this.socket.sendJson(x);
-            // this.lastToX=moveToX;
-            // this.lastToY=moveToY;
-            // }
-            // }
+            let moveXSpeed = (this.pageX - this.width/2) / 300;
+            let moveYSpeed = (this.pageY - this.height/2) / 300;
+            let maxXSpeed = moveXSpeed>=0 ? 3 : -3;
+            let maxYSpeed = moveYSpeed>=0 ? 3 : -3;
+            let moveToX = Math.abs(moveXSpeed)>3 ? this.me.x + maxXSpeed : this.me.x + moveXSpeed;
+            let moveToY = Math.abs(moveYSpeed)>3 ? this.me.y + maxYSpeed : this.me.y + moveYSpeed;
+            let r = Math.sqrt(this.me.grade/Math.PI);
+            this.me.x = moveToX < r ? r : (moveToX > 5000-r ? 5000-r : moveToX);
+            this.me.y = moveToY < r ? r : (moveToY > 5000-r ? 5000-r : moveToY);
+
+            let moveToTX = this.me.x + maxXSpeed * 2;
+            let moveToTY = this.me.y + maxYSpeed * 2;
+            this.me["tx"] = moveToTX < r ? r : (moveToTX > 5000-r ? 5000-r : moveToTX);
+            this.me["ty"] = moveToTY < r ? r : (moveToTY > 5000-r ? 5000-r : moveToTY);
         }
-        let that=this;
-        requestAnimationFrame(function(time){
-            that.sendMoveData();
-        });
-        // let currTime = new Date().getTime();
-        // let timeToCall = Math.max(0, 16 - (currTime - lastTime));
-        // setTimeout(function(){
-        //    that.sendMoveData();
-        // },8.3);
-        // lastTime = currTime + timeToCall;
+        let that = this;
+        setTimeout(function(){
+            that.loopMoveData();
+        }, 10);
     };
 
     $(document).ready(function(){

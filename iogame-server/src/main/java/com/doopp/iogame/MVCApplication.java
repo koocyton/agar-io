@@ -72,7 +72,7 @@ public class MVCApplication {
             .addInjectorConsumer(injector->{
                 // run task
                 ScheduledExecutorService newScheduledThreadPool = Executors.newScheduledThreadPool(4);
-                newScheduledThreadPool.scheduleWithFixedDelay(injector.getInstance(AgarGameTask.class), 4, 10, TimeUnit.MILLISECONDS);
+                newScheduledThreadPool.scheduleWithFixedDelay(injector.getInstance(AgarGameTask.class), 4, 100, TimeUnit.MILLISECONDS);
             })
             .start();
     }
